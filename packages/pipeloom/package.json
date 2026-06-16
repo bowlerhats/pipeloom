@@ -1,0 +1,17 @@
+{
+  "name": "pipeloom",
+  "version": "0.0.2",
+  "description": "WIP for @pipeloom/engine ",
+  "keywords": [
+    "pipeloom",
+    "query",
+    "pipeline",
+    "reactive"
+  ],
+  "homepage": "https://github.com/bowlerhats/pipeloom",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bowlerhats/pipeloom"
+  }
+}
