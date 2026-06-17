@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PipeLoom", "PipeLoom\PipeLoom.csproj", "{A5543121-989A-4C76-81B7-662812D2EDDE}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionFolder", "SolutionFolder", "{A480B4F7-6DAA-417F-9A90-D32B92AD7C04}"
+	ProjectSection(SolutionItems) = preProject
+		Directory.Build.props = Directory.Build.props
+		Directory.Build.targets = Directory.Build.targets
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A5543121-989A-4C76-81B7-662812D2EDDE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A5543121-989A-4C76-81B7-662812D2EDDE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A5543121-989A-4C76-81B7-662812D2EDDE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A5543121-989A-4C76-81B7-662812D2EDDE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
