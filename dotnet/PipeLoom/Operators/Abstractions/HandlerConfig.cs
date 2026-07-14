@@ -36,14 +36,14 @@ public readonly record struct HandlerConfig<T>(
         return next is null ? this : new HandlerConfig<T>(this.Actions.Add(next));
     }
 
-    public HandlerConfig<T> After(HandlerConfig<T> previous)
+    public HandlerConfig<T> Prepend(HandlerConfig<T> previous)
     {
         return previous.Actions.IsEmpty
             ? this
             : this.Actions.IsEmpty ? previous : new HandlerConfig<T>(previous.Actions.AddRange(this.Actions));
     }
     
-    public HandlerConfig<T> After(Action<T>? previous)
+    public HandlerConfig<T> Prepend(Action<T>? previous)
     {
         return previous is null ? this : new HandlerConfig<T>(this.Actions.Insert(0, previous));
     }

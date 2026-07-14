@@ -17,8 +17,7 @@ public class PlOpPipe : PlOperatorClass
     {
         base.RegisterHandlers(registrator);
 
-        registrator.AsVariadic<Detached<Variant>>()
-            .Bundler(Pipe);
+        registrator.AsVariadic<Detached<Variant>>().Bundler(Pipe);
     }
 
     public static ValueTask<IBundle<Variant>> Pipe(WeaveStep step, ReadOnlyMemory<Detached<Variant>> args)
