@@ -1,4 +1,6 @@
-﻿namespace PipeLoom.Engine;
+﻿using PipeLoom.Engine.Abstractions;
+
+namespace PipeLoom.Engine;
 
 public sealed class OperatorRegistry
 {

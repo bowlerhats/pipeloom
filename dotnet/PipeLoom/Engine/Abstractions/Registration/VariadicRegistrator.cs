@@ -1,24 +1,22 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using PipeLoom.Engine.Abstractions.Adapters;
 using PipeLoom.Operators.Abstractions.Handlers;
 
 namespace PipeLoom.Engine.Abstractions.Registration;
 
 public readonly record struct VariadicRegistrator<T>(PlOperatorRegistrator Registrator, HandlerConfig<VariadicHandler> Config)
 {
+    private IPipeLoomEngine Engine => this.Registrator.Engine;
+    
     #region Generic
     
     [OverloadResolutionPriority(1)]
     public VariadicRegistrator<T> Function<TResult>(Func<ReadOnlyMemory<T>, ValueTask<TResult>> op, Action<VariadicHandler>? config = null, HandlerConfig<VariadicHandler> next = default)
     {
-        var resultType = this.Registrator.Engine.TypeOf<TResult>();
         this.Registrator.Variadic(
-            async args =>
-            {
-                using var vrecast = new VariantRecaster<T>(resultType.Engine, args.Span);
-                return Variant.From(await op(vrecast.Memory), resultType);
-            },
+            MethodAdapter.Variadic(this.Engine, op),
             this.Config.Then(h => h.ChangeSignature<T, TResult>()).Then(config).Then(next)
         );
 
@@ -27,13 +25,8 @@ public readonly record struct VariadicRegistrator<T>(PlOperatorRegistrator Regis
     
     public VariadicRegistrator<T> Function<TResult>(Func<ReadOnlyMemory<T>, TResult> op, Action<VariadicHandler>? config = null, HandlerConfig<VariadicHandler> next = default)
     {
-        var resultType = this.Registrator.Engine.TypeOf<TResult>();
         this.Registrator.Variadic(
-            (scoped in args) =>
-            {
-                using var vrecast = new VariantRecaster<T>(resultType.Engine, args.Span);
-                return Variant.From(op(vrecast.Memory), resultType);
-            },
+            MethodAdapter.Variadic(this.Engine, op),
             this.Config.Then(h => h.ChangeSignature<T, TResult>()).Then(config).Then(next)
         );
 
@@ -43,13 +36,8 @@ public readonly record struct VariadicRegistrator<T>(PlOperatorRegistrator Regis
     [OverloadResolutionPriority(1)]
     public VariadicRegistrator<T> Function<TResult>(Func<WeaveStep, ReadOnlyMemory<T>, ValueTask<TResult>> op, Action<VariadicHandler>? config = null, HandlerConfig<VariadicHandler> next = default)
     {
-        var resultType = this.Registrator.Engine.TypeOf<TResult>();
         this.Registrator.Variadic(
-            async (step, args) =>
-            {
-                using var vrecast = new VariantRecaster<T>(resultType.Engine, args.Span);
-                return Variant.From(await op(step, vrecast.Memory), resultType);
-            },
+            MethodAdapter.Variadic(this.Engine, op),
             this.Config.Then(h => h.ChangeSignature<T, TResult>()).Then(config).Then(next)
         );
 
@@ -58,13 +46,8 @@ public readonly record struct VariadicRegistrator<T>(PlOperatorRegistrator Regis
     
     public VariadicRegistrator<T> Function<TResult>(Func<WeaveStep, ReadOnlyMemory<T>, TResult> op, Action<VariadicHandler>? config = null, HandlerConfig<VariadicHandler> next = default)
     {
-        var resultType = this.Registrator.Engine.TypeOf<TResult>();
         this.Registrator.Variadic(
-            (scoped in step, scoped in args) =>
-            {
-                using var vrecast = new VariantRecaster<T>(resultType.Engine, args.Span);
-                return Variant.From(op(step, vrecast.Memory), resultType);
-            },
+            MethodAdapter.Variadic(this.Engine, op),
             this.Config.Then(h => h.ChangeSignature<T, TResult>()).Then(config).Then(next)
         );
 
@@ -78,6 +61,10 @@ public readonly record struct VariadicRegistrator<T>(PlOperatorRegistrator Regis
     [OverloadResolutionPriority(1)]
     public VariadicRegistrator<T> Transformer<TResult>(Func<ReadOnlyMemory<Many<T>>, ValueTask<Many<TResult>>> op, Action<VariadicHandler>? config = null, HandlerConfig<VariadicHandler> next = default)
     {
+        this.Registrator.Variadic(
+            MethodAdapter.Variadic(this.Engine, op),
+            this.Config.Then(h => h.WithRole(HandlerRole.Transformer).ChangeSignature<Many<T>, Many<TResult>>()).Then(config).Then(next)
+        );
         this.Registrator.AsVariadic<Many<T>>(this.Config).Function(
             op,
             next: next

@@ -1,34 +1,12 @@
-﻿namespace PipeLoom.Operators.Abstractions.Handlers;
+﻿using PipeLoom.Engine.Abstractions.Adapters;
+
+namespace PipeLoom.Operators.Abstractions.Handlers;
 
 public sealed class VariadicHandler : OperatorHandler<VariadicHandler>
 {
-    private VariadicHandler(PlOperatorClass operatorClass)
-        : base(operatorClass, PlOperatorArity.Variadic)
+    public VariadicHandler(PlOperatorClass operatorClass, MethodAdapter adapter)
+        : base(operatorClass, PlOperatorArity.Variadic, adapter)
     {
-    }
-
-    internal VariadicHandler(PlOperatorClass operatorClass, PlOperatorDelegates.VariadicFunction op)
-        : this(operatorClass)
-    {
-    }
-    
-    internal VariadicHandler(PlOperatorClass operatorClass, PlOperatorDelegates.VariadicFunctionWithStep op)
-        : this(operatorClass)
-    {
-        this.IsUsingStep = true;
-    }
-    
-    internal VariadicHandler(PlOperatorClass operatorClass, PlOperatorDelegates.VariadicFunctionAsync op)
-        : this(operatorClass)
-    {
-        this.IsAsync = true;
-    }
-    
-    internal VariadicHandler(PlOperatorClass operatorClass, PlOperatorDelegates.VariadicFunctionAsyncWithStep op)
-        : this(operatorClass)
-    {
-        this.IsAsync = true;
-        this.IsUsingStep = true;
     }
     
     public VariadicHandler ChangeSignature<TVariadic, TReturn>()

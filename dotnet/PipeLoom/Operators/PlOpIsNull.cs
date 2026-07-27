@@ -19,7 +19,7 @@ public class PlOpIsNull : PlOperatorClass
     
     public static Variant IsNull(scoped in Variant v)
     {
-        var isnull = !v.IsDefined || v is { IsReference: true, Reference: null };
+        var isnull = v.IsUndefined || v is { IsReference: true, Reference: null };
         return Variant.From(isnull);
     }
 }

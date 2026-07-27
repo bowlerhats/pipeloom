@@ -1,34 +1,13 @@
-﻿namespace PipeLoom.Operators.Abstractions.Handlers;
+﻿using PipeLoom.Engine.Abstractions;
+using PipeLoom.Engine.Abstractions.Adapters;
+
+namespace PipeLoom.Operators.Abstractions.Handlers;
 
 public sealed class UnaryHandler: OperatorHandler<UnaryHandler>
 {
-    private UnaryHandler(PlOperatorClass operatorClass)
-        : base(operatorClass, PlOperatorArity.Unary)
+    public UnaryHandler(PlOperatorClass operatorClass, MethodAdapter adapter)
+        : base(operatorClass, PlOperatorArity.Unary, adapter)
     {
-    }
-
-    internal UnaryHandler(PlOperatorClass operatorClass, PlOperatorDelegates.UnaryFunction op)
-        : this(operatorClass)
-    {
-    }
-    
-    internal UnaryHandler(PlOperatorClass operatorClass, PlOperatorDelegates.UnaryFunctionWithStep op)
-        : this(operatorClass)
-    {
-        this.IsUsingStep = true;
-    }
-    
-    internal UnaryHandler(PlOperatorClass operatorClass, PlOperatorDelegates.UnaryFunctionAsync op)
-        : this(operatorClass)
-    {
-        this.IsAsync = true;
-    }
-    
-    internal UnaryHandler(PlOperatorClass operatorClass, PlOperatorDelegates.UnaryFunctionAsyncWithStep op)
-        : this(operatorClass)
-    {
-        this.IsAsync = true;
-        this.IsUsingStep = true;
     }
 
     public UnaryHandler ChangeSignature<T1, TReturn>()

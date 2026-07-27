@@ -1,34 +1,13 @@
-﻿namespace PipeLoom.Operators.Abstractions.Handlers;
+﻿using PipeLoom.Engine.Abstractions;
+using PipeLoom.Engine.Abstractions.Adapters;
+
+namespace PipeLoom.Operators.Abstractions.Handlers;
 
 public sealed class TernaryHandler : OperatorHandler<TernaryHandler>
 {
-    private TernaryHandler(PlOperatorClass operatorClass)
-        : base(operatorClass, PlOperatorArity.Ternary)
+    public TernaryHandler(PlOperatorClass operatorClass, MethodAdapter adapter)
+        : base(operatorClass, PlOperatorArity.Ternary, adapter)
     {
-    }
-
-    internal TernaryHandler(PlOperatorClass operatorClass, PlOperatorDelegates.TernaryFunction op)
-        : this(operatorClass)
-    {
-    }
-    
-    internal TernaryHandler(PlOperatorClass operatorClass, PlOperatorDelegates.TernaryFunctionWithStep op)
-        : this(operatorClass)
-    {
-        this.IsUsingStep = true;
-    }
-    
-    internal TernaryHandler(PlOperatorClass operatorClass, PlOperatorDelegates.TernaryFunctionAsync op)
-        : this(operatorClass)
-    {
-        this.IsAsync = true;
-    }
-    
-    internal TernaryHandler(PlOperatorClass operatorClass, PlOperatorDelegates.TernaryFunctionAsyncWithStep op)
-        : this(operatorClass)
-    {
-        this.IsAsync = true;
-        this.IsUsingStep = true;
     }
     
     public TernaryHandler ChangeSignature<T1, T2, T3, TReturn>()

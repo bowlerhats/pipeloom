@@ -1,34 +1,13 @@
-﻿namespace PipeLoom.Operators.Abstractions.Handlers;
+﻿using PipeLoom.Engine.Abstractions;
+using PipeLoom.Engine.Abstractions.Adapters;
+
+namespace PipeLoom.Operators.Abstractions.Handlers;
 
 public sealed class BinaryHandler: OperatorHandler<BinaryHandler>
 {
-    private BinaryHandler(PlOperatorClass operatorClass)
-        : base(operatorClass, PlOperatorArity.Binary)
+    public BinaryHandler(PlOperatorClass operatorClass, MethodAdapter adapter)
+        : base(operatorClass, PlOperatorArity.Binary, adapter)
     {
-    }
-
-    internal BinaryHandler(PlOperatorClass operatorClass, PlOperatorDelegates.BinaryFunction op)
-        : this(operatorClass)
-    {
-    }
-    
-    internal BinaryHandler(PlOperatorClass operatorClass, PlOperatorDelegates.BinaryFunctionWithStep op)
-        : this(operatorClass)
-    {
-        this.IsUsingStep = true;
-    }
-    
-    internal BinaryHandler(PlOperatorClass operatorClass, PlOperatorDelegates.BinaryFunctionAsync op)
-        : this(operatorClass)
-    {
-        this.IsAsync = true;
-    }
-    
-    internal BinaryHandler(PlOperatorClass operatorClass, PlOperatorDelegates.BinaryFunctionAsyncWithStep op)
-        : this(operatorClass)
-    {
-        this.IsAsync = true;
-        this.IsUsingStep = true;
     }
     
     public BinaryHandler ChangeSignature<T1, T2, TReturn>()

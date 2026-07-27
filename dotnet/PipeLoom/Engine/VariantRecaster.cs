@@ -11,7 +11,7 @@ internal readonly struct VariantRecaster<T> : IDisposable
     private readonly T[] _rented;
     private readonly ArrayPool<T>? _pool;
         
-    public VariantRecaster(IPipeLoomEngine engine, scoped in ReadOnlySpan<Variant> inputs)
+    public VariantRecaster(ArrayPool<T> pool, Converter<Variant, T> converter, scoped in ReadOnlySpan<Variant> inputs)
     {
         var inputLength = inputs.Length;
         if (inputLength <= 0)
@@ -22,12 +22,12 @@ internal readonly struct VariantRecaster<T> : IDisposable
             return;
         }
         
-        _pool = engine.GetArrayPool<T>();
+        _pool = pool;
         _rented = _pool.Rent(inputs.Length);
 
         for (var i = 0; i < inputLength; i++)
         {
-            _rented[i] = inputs[i].Unpack<T>(reinterpret: true);
+            _rented[i] = converter(inputs[i]);
         }
 
         Memory = _rented.AsMemory(0, inputLength);

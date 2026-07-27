@@ -27,7 +27,7 @@ public readonly struct Variant : IEquatable<Variant>
     // ReSharper restore ConvertToAutoProperty
     // ReSharper restore ConvertToAutoPropertyWhenPossible
 
-    public bool IsDefined => !ReferenceEquals(_tag, UndefinedMarker);
+    public bool IsUndefined => ReferenceEquals(_tag, UndefinedMarker);
 
     private Variant(object? reference, Type type, object? tag)
     {
@@ -60,6 +60,12 @@ public readonly struct Variant : IEquatable<Variant>
     public static Variant From(Variant value, object? tag = null)
     {
         return new Variant(value, tag);
+    }
+
+    public static Variant From<T>(IPipeLoomEngine engine, T value)
+    {
+        var type = engine.TypeOf<T>();
+        return From(value, type);
     }
     
     public static Variant From<T>(T value, object? tag = null)
@@ -140,17 +146,13 @@ public readonly struct Variant : IEquatable<Variant>
         
         if (RuntimeHelpers.IsReferenceOrContainsReferences<T>() || Unsafe.SizeOf<T>() > 32)
         {
-            if (!_isReference)
-                return false;
-
-            value = (T)_reference!;
-            
-            return true;
+            return _isReference && TryCast(_reference, out value);
         }
 
         if (_isReference)
         {
-            value = (T)_reference!;
+            if (!TryCast(_reference, out value))
+                return false;
         }
         else
         {
@@ -161,12 +163,19 @@ public readonly struct Variant : IEquatable<Variant>
         return true;
     }
 
+    public Variant UncheckedCastAs(Type type, object? tag = null)
+    {
+        return this.IsReference
+            ? new Variant(_reference, type, tag)
+            : new Variant(_packed, type, tag);
+    }
+
     public bool Equals(Variant other)
     {
         if (_type != other._type)
             return false;
 
-        if (!this.IsDefined || !other.IsDefined)
+        if (this.IsUndefined || other.IsUndefined)
             return false;
         
         if (_isReference)
@@ -193,6 +202,18 @@ public readonly struct Variant : IEquatable<Variant>
     public static bool operator !=(Variant left, Variant right)
     {
         return !(left == right);
+    }
+
+    private static bool TryCast<T>(object? value, out T casted)
+    {
+        if (value is T v)
+        {
+            casted = v;
+            return true;
+        }
+
+        casted = default!;
+        return false;
     }
     
     [StructLayout(LayoutKind.Explicit, Size = 32)]

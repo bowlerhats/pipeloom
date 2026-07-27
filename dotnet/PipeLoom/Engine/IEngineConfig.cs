@@ -9,7 +9,9 @@ internal interface IEngineConfig
 {
     public List<Func<IPipeLoomEngine, PlTypeDef>> TypeFactories { get; }
     
-    public List<Func<IPipeLoomEngine, IPlOperatorClass>> OperatorClassFactories { get; }
+    public List<Func<IPipeLoomEngine, PlOperatorClass>> OperatorClassFactories { get; }
     
     public List<(string name, Func<PlOperatorRegistrator, PlOperatorRegistrator> regFunc)> OperatorFactories { get; }
+    
+    
 }

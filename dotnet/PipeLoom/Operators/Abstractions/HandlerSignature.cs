@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using PipeLoom.Engine;
+using PipeLoom.Engine.Abstractions;
 
 namespace PipeLoom.Operators.Abstractions;
 
@@ -17,7 +18,7 @@ public sealed class HandlerSignature: IEquatable<HandlerSignature>
     
     public required bool IsVariadic { get; init; }
     
-    private HandlerSignature() { }
+    private HandlerSignature() {}
 
     public override string ToString()
     {
@@ -27,66 +28,148 @@ public sealed class HandlerSignature: IEquatable<HandlerSignature>
         return $"{arity}({arguments}): {this.ReturnType.Name}";
     }
 
-    #region Factory methods
+    public HandlerSignature AsVariadic()
+    {
+        if (this.IsVariadic)
+            return this;
+        
+        return new HandlerSignature
+        {
+            Engine = this.Engine,
+            Arity = PlOperatorArity.Variadic,
+            ReturnType = this.ReturnType,
+            ArgumentTypes = [this.Engine.CommonBaseOf(this.ArgumentTypes)],
+            IsVariadic = true
+        };
+    }
+
+    public bool IsStrictSuperSetOf(HandlerSignature other)
+    {
+        return !this.Equals(other) && this.IsSuperSetOf(other);
+    }
     
-    public static HandlerSignature Nullary<TReturn>(IPipeLoomEngine engine)
+    public bool IsSuperSetOf(HandlerSignature other)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+
+        if (this.Engine != other.Engine
+            || this.Arity != other.Arity
+            || this.IsVariadic != other.IsVariadic
+            || this.ArgumentTypes.Count != other.ArgumentTypes.Count)
+        {
+            return false;
+        }
+
+        if (!other.ReturnType.IsAssignableTo(this.ReturnType))
+            return false;
+
+        for (var i = 0; i < this.ArgumentTypes.Count; i++)
+        {
+            if (!this.ArgumentTypes[i].IsAssignableTo(other.ArgumentTypes[i]))
+                return false;
+        }
+
+        return true;
+    }
+
+    public bool IsStrictSubSetOf(HandlerSignature other)
+    {
+        return !this.Equals(other) && this.IsSubSetOf(other);
+    }
+    
+    public bool IsSubSetOf(HandlerSignature other)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+        return other.IsSuperSetOf(this);
+    }
+    
+    
+
+    #region Factory methods
+
+    public static HandlerSignature Nullary(PlTypeDef returnType)
     {
         return new HandlerSignature
         {
-            Engine = engine,
+            Engine = returnType.Engine,
             Arity = PlOperatorArity.Nullary,
-            ReturnType = engine.TypeOf<TReturn>(),
+            ReturnType = returnType,
             ArgumentTypes = [],
+            IsVariadic = false
+        };
+    }
+    
+    public static HandlerSignature Nullary<TReturn>(IPipeLoomEngine engine)
+    {
+        return Nullary(engine.TypeOf<TReturn>());
+    }
+
+    public static HandlerSignature Unary(PlTypeDef returnType, PlTypeDef arg1)
+    {
+        return new HandlerSignature
+        {
+            Engine = returnType.Engine,
+            Arity = PlOperatorArity.Unary,
+            ReturnType = returnType,
+            ArgumentTypes = [arg1],
             IsVariadic = false
         };
     }
     
     public static HandlerSignature Unary<T1, TReturn>(IPipeLoomEngine engine)
     {
+        return Unary(engine.TypeOf<TReturn>(), engine.TypeOf<T1>());
+    }
+    
+    public static HandlerSignature Binary(PlTypeDef returnType, PlTypeDef arg1, PlTypeDef arg2)
+    {
         return new HandlerSignature
         {
-            Engine = engine,
-            Arity = PlOperatorArity.Unary,
-            ReturnType = engine.TypeOf<TReturn>(),
-            ArgumentTypes = [engine.TypeOf<T1>()],
+            Engine = returnType.Engine,
+            Arity = PlOperatorArity.Binary,
+            ReturnType = returnType,
+            ArgumentTypes = [arg1, arg2],
             IsVariadic = false
         };
     }
     
     public static HandlerSignature Binary<T1, T2, TReturn>(IPipeLoomEngine engine)
     {
+        return Binary(engine.TypeOf<TReturn>(), engine.TypeOf<T1>(), engine.TypeOf<T2>());
+    }
+    
+    public static HandlerSignature Ternary(PlTypeDef returnType, PlTypeDef arg1, PlTypeDef arg2, PlTypeDef arg3)
+    {
         return new HandlerSignature
         {
-            Engine = engine,
-            Arity = PlOperatorArity.Binary,
-            ReturnType = engine.TypeOf<TReturn>(),
-            ArgumentTypes = [engine.TypeOf<T1>(), engine.TypeOf<T2>()],
+            Engine = returnType.Engine,
+            Arity = PlOperatorArity.Ternary,
+            ReturnType = returnType,
+            ArgumentTypes = [arg1, arg2, arg3],
             IsVariadic = false
         };
     }
     
     public static HandlerSignature Ternary<T1, T2, T3, TReturn>(IPipeLoomEngine engine)
     {
+        return Ternary(engine.TypeOf<TReturn>(), engine.TypeOf<T1>(), engine.TypeOf<T2>(), engine.TypeOf<T3>());
+    }
+
+    public static HandlerSignature Variadic(PlTypeDef returnType, PlTypeDef vArg)
+    {
         return new HandlerSignature
         {
-            Engine = engine,
-            Arity = PlOperatorArity.Ternary,
-            ReturnType = engine.TypeOf<TReturn>(),
-            ArgumentTypes = [engine.TypeOf<T1>(), engine.TypeOf<T2>(), engine.TypeOf<T3>()],
-            IsVariadic = false
+            Engine = returnType.Engine,
+            Arity = PlOperatorArity.Variadic,
+            ReturnType = returnType,
+            ArgumentTypes = [vArg],
+            IsVariadic = true
         };
     }
     
     public static HandlerSignature Variadic<TVariadic, TReturn>(IPipeLoomEngine engine)
     {
-        return new HandlerSignature
-        {
-            Engine = engine,
-            Arity = PlOperatorArity.Variadic,
-            ReturnType = engine.TypeOf<TReturn>(),
-            ArgumentTypes = [engine.TypeOf<TVariadic>()],
-            IsVariadic = true
-        };
+        return Variadic(engine.TypeOf<TReturn>(), engine.TypeOf<TVariadic>());
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -105,6 +188,23 @@ public sealed class HandlerSignature: IEquatable<HandlerSignature>
     public static HandlerSignature NonVariadic<T1, T2, T3, TReturn>(IPipeLoomEngine engine)
     {
         return Ternary<T1, T2, T3, TReturn>(engine);
+    }
+
+    public static HandlerSignature From(PlTypeDef returnType, IEnumerable<PlTypeDef> args)
+    {
+        var engine = returnType.Engine;
+        
+        var arity = engine.GuessArity(args) ?? PlOperatorArity.Variadic;
+        var isVariadic = arity == PlOperatorArity.Variadic;
+
+        return new HandlerSignature
+        {
+            Engine = engine,
+            Arity = arity,
+            ReturnType = returnType,
+            ArgumentTypes = isVariadic ? [engine.CommonBaseOf(args)] : args.ToList(),
+            IsVariadic = isVariadic
+        };
     }
     
     #endregion

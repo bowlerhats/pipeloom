@@ -12,6 +12,20 @@ public enum PlOperatorArity
 }
 
 public static class PlOperatorArityExtensions {
+
+    public static PlOperatorArity Infer(int arity)
+    {
+        return arity switch
+        {
+            0 => PlOperatorArity.Nullary,
+            1 => PlOperatorArity.Unary,
+            2 => PlOperatorArity.Binary,
+            3 => PlOperatorArity.Ternary,
+            4 => PlOperatorArity.Variadic,
+            _ => throw new ArgumentOutOfRangeException(nameof(arity))
+        };
+    }
+    
     public static string ToDisplayString(this PlOperatorArity arity)
     {
         return arity switch
