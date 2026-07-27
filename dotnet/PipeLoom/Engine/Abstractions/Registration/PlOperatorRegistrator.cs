@@ -218,6 +218,12 @@ public abstract class PlOperatorRegistrator
     
     #region Variadic
 
+    public ImplicitVariadicRegistrator<TImplicit, TVariadic> AsVariadic<TImplicit, TVariadic>(Action<VariadicHandler> config) => this.AsVariadic<TImplicit, TVariadic>(HandlerConfig.From(config));
+    public virtual ImplicitVariadicRegistrator<TImplicit, TVariadic> AsVariadic<TImplicit, TVariadic>(HandlerConfig<VariadicHandler> config = default)
+    {
+        return new ImplicitVariadicRegistrator<TImplicit, TVariadic>(this, config);
+    }
+    
     public VariadicRegistrator<T> AsVariadic<T>(Action<VariadicHandler> config) => this.AsVariadic<T>(HandlerConfig.From(config));
     public virtual VariadicRegistrator<T> AsVariadic<T>(HandlerConfig<VariadicHandler> config = default)
     {

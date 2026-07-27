@@ -17,6 +17,8 @@ public sealed class HandlerSignature: IEquatable<HandlerSignature>
     public required IReadOnlyList<PlTypeDef> ArgumentTypes { get; init; }
     
     public required bool IsVariadic { get; init; }
+
+    public bool IsHomogenic => this.IsVariadic && this.ArgumentTypes.Count == 1;
     
     private HandlerSignature() {}
 
@@ -82,7 +84,6 @@ public sealed class HandlerSignature: IEquatable<HandlerSignature>
         ArgumentNullException.ThrowIfNull(other);
         return other.IsSuperSetOf(this);
     }
-    
     
 
     #region Factory methods
@@ -167,9 +168,27 @@ public sealed class HandlerSignature: IEquatable<HandlerSignature>
         };
     }
     
+    public static HandlerSignature Variadic(PlTypeDef returnType, PlTypeDef vImplicit, PlTypeDef vArg)
+    {
+        return new HandlerSignature
+        {
+            Engine = returnType.Engine,
+            Arity = PlOperatorArity.Variadic,
+            ReturnType = returnType,
+            ArgumentTypes = [vImplicit, vArg],
+            IsVariadic = true
+        };
+    }
+    
+    
     public static HandlerSignature Variadic<TVariadic, TReturn>(IPipeLoomEngine engine)
     {
         return Variadic(engine.TypeOf<TReturn>(), engine.TypeOf<TVariadic>());
+    }
+    
+    public static HandlerSignature Variadic<TImplicit, TVariadic, TReturn>(IPipeLoomEngine engine)
+    {
+        return Variadic(engine.TypeOf<TReturn>(), engine.TypeOf<TImplicit>(), engine.TypeOf<TVariadic>());
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

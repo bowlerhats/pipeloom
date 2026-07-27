@@ -223,42 +223,42 @@ public readonly record struct TernaryRegistrator<T1, T2, T3>(PlOperatorRegistrat
     #region Bundler
     
     [OverloadResolutionPriority(1)]
-    public TernaryRegistrator<T1, T2, T3> Bundler<TResult>(Func<T1, T2, T3, ValueTask<IBundle<TResult>>> op, Action<TernaryHandler>? config = null, HandlerConfig<TernaryHandler> next = default)
+    public TernaryRegistrator<T1, T2, T3> Bundler<TResult>(Func<IReadOnlyBundle<T1>, T2, T3, ValueTask<IBundle<TResult>>> op, Action<TernaryHandler>? config = null, HandlerConfig<TernaryHandler> next = default)
     {
         this.Registrator.Ternary(
             MethodAdapter.Ternary(this.Engine, op),
-            this.Config.Then(h => h.WithRole(HandlerRole.Bundler).ChangeSignature<T1, T2, T3, IBundle<TResult>>()).Then(config).Then(next)
+            this.Config.Then(h => h.WithRole(HandlerRole.Bundler).ChangeSignature<IReadOnlyBundle<T1>, T2, T3, IBundle<TResult>>()).Then(config).Then(next)
         );
         
         return this;
     }
     
-    public TernaryRegistrator<T1, T2, T3> Bundler<TResult>(Func<T1, T2, T3, IBundle<TResult>> op, Action<TernaryHandler>? config = null, HandlerConfig<TernaryHandler> next = default)
+    public TernaryRegistrator<T1, T2, T3> Bundler<TResult>(Func<IReadOnlyBundle<T1>, T2, T3, IBundle<TResult>> op, Action<TernaryHandler>? config = null, HandlerConfig<TernaryHandler> next = default)
     {
         this.Registrator.Ternary(
             MethodAdapter.Ternary(this.Engine, op),
-            this.Config.Then(h => h.WithRole(HandlerRole.Bundler).ChangeSignature<T1, T2, T3, IBundle<TResult>>()).Then(config).Then(next)
+            this.Config.Then(h => h.WithRole(HandlerRole.Bundler).ChangeSignature<IReadOnlyBundle<T1>, T2, T3, IBundle<TResult>>()).Then(config).Then(next)
         );
         
         return this;
     }
     
     [OverloadResolutionPriority(1)]
-    public TernaryRegistrator<T1, T2, T3> Bundler<TResult>(Func<WeaveStep, T1, T2, T3, ValueTask<IBundle<TResult>>> op, Action<TernaryHandler>? config = null, HandlerConfig<TernaryHandler> next = default)
+    public TernaryRegistrator<T1, T2, T3> Bundler<TResult>(Func<WeaveStep, IReadOnlyBundle<T1>, T2, T3, ValueTask<IBundle<TResult>>> op, Action<TernaryHandler>? config = null, HandlerConfig<TernaryHandler> next = default)
     {
         this.Registrator.Ternary(
             MethodAdapter.Ternary(this.Engine, op),
-            this.Config.Then(h => h.WithRole(HandlerRole.Bundler).ChangeSignature<T1, T2, T3, IBundle<TResult>>()).Then(config).Then(next)
+            this.Config.Then(h => h.WithRole(HandlerRole.Bundler).ChangeSignature<IReadOnlyBundle<T1>, T2, T3, IBundle<TResult>>()).Then(config).Then(next)
         );
         
         return this;
     }
     
-    public TernaryRegistrator<T1, T2, T3> Bundler<TResult>(Func<WeaveStep, T1, T2, T3, IBundle<TResult>> op, Action<TernaryHandler>? config = null, HandlerConfig<TernaryHandler> next = default)
+    public TernaryRegistrator<T1, T2, T3> Bundler<TResult>(Func<WeaveStep, IReadOnlyBundle<T1>, T2, T3, IBundle<TResult>> op, Action<TernaryHandler>? config = null, HandlerConfig<TernaryHandler> next = default)
     {
         this.Registrator.Ternary(
             MethodAdapter.Ternary(this.Engine, op),
-            this.Config.Then(h => h.WithRole(HandlerRole.Bundler).ChangeSignature<T1, T2, T3, IBundle<TResult>>()).Then(config).Then(next)
+            this.Config.Then(h => h.WithRole(HandlerRole.Bundler).ChangeSignature<IReadOnlyBundle<T1>, T2, T3, IBundle<TResult>>()).Then(config).Then(next)
         );
         
         return this;

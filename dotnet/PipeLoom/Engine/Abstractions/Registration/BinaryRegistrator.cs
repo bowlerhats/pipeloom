@@ -223,42 +223,42 @@ public readonly record struct BinaryRegistrator<T1, T2>(PlOperatorRegistrator Re
     #region Bundler
     
     [OverloadResolutionPriority(1)]
-    public BinaryRegistrator<T1, T2> Bundler<TResult>(Func<T1, T2, ValueTask<IBundle<TResult>>> op, Action<BinaryHandler>? config = null, HandlerConfig<BinaryHandler> next = default)
+    public BinaryRegistrator<T1, T2> Bundler<TResult>(Func<IReadOnlyBundle<T1>, T2, ValueTask<IBundle<TResult>>> op, Action<BinaryHandler>? config = null, HandlerConfig<BinaryHandler> next = default)
     {
         this.Registrator.Binary(
             MethodAdapter.Binary(this.Engine, op),
-            this.Config.Then(h => h.WithRole(HandlerRole.Bundler).ChangeSignature<T1, T2, IBundle<TResult>>()).Then(config).Then(next)
+            this.Config.Then(h => h.WithRole(HandlerRole.Bundler).ChangeSignature<IReadOnlyBundle<T1>, T2, IBundle<TResult>>()).Then(config).Then(next)
         );
         
         return this;
     }
     
-    public BinaryRegistrator<T1, T2> Bundler<TResult>(Func<T1, T2, IBundle<TResult>> op, Action<BinaryHandler>? config = null, HandlerConfig<BinaryHandler> next = default)
+    public BinaryRegistrator<T1, T2> Bundler<TResult>(Func<IReadOnlyBundle<T1>, T2, IBundle<TResult>> op, Action<BinaryHandler>? config = null, HandlerConfig<BinaryHandler> next = default)
     {
         this.Registrator.Binary(
             MethodAdapter.Binary(this.Engine, op),
-            this.Config.Then(h => h.WithRole(HandlerRole.Bundler).ChangeSignature<T1, T2, IBundle<TResult>>()).Then(config).Then(next)
+            this.Config.Then(h => h.WithRole(HandlerRole.Bundler).ChangeSignature<IReadOnlyBundle<T1>, T2, IBundle<TResult>>()).Then(config).Then(next)
         );
         
         return this;
     }
     
     [OverloadResolutionPriority(1)]
-    public BinaryRegistrator<T1, T2> Bundler<TResult>(Func<WeaveStep, T1, T2, ValueTask<IBundle<TResult>>> op, Action<BinaryHandler>? config = null, HandlerConfig<BinaryHandler> next = default)
+    public BinaryRegistrator<T1, T2> Bundler<TResult>(Func<WeaveStep, IReadOnlyBundle<T1>, T2, ValueTask<IBundle<TResult>>> op, Action<BinaryHandler>? config = null, HandlerConfig<BinaryHandler> next = default)
     {
         this.Registrator.Binary(
             MethodAdapter.Binary(this.Engine, op),
-            this.Config.Then(h => h.WithRole(HandlerRole.Bundler).ChangeSignature<T1, T2, IBundle<TResult>>()).Then(config).Then(next)
+            this.Config.Then(h => h.WithRole(HandlerRole.Bundler).ChangeSignature<IReadOnlyBundle<T1>, T2, IBundle<TResult>>()).Then(config).Then(next)
         );
         
         return this;
     }
     
-    public BinaryRegistrator<T1, T2> Bundler<TResult>(Func<WeaveStep, T1, T2, IBundle<TResult>> op, Action<BinaryHandler>? config = null, HandlerConfig<BinaryHandler> next = default)
+    public BinaryRegistrator<T1, T2> Bundler<TResult>(Func<WeaveStep, IReadOnlyBundle<T1>, T2, IBundle<TResult>> op, Action<BinaryHandler>? config = null, HandlerConfig<BinaryHandler> next = default)
     {
         this.Registrator.Binary(
             MethodAdapter.Binary(this.Engine, op),
-            this.Config.Then(h => h.WithRole(HandlerRole.Bundler).ChangeSignature<T1, T2, IBundle<TResult>>()).Then(config).Then(next)
+            this.Config.Then(h => h.WithRole(HandlerRole.Bundler).ChangeSignature<IReadOnlyBundle<T1>, T2, IBundle<TResult>>()).Then(config).Then(next)
         );
         
         return this;

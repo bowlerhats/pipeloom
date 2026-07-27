@@ -20,13 +20,15 @@ public sealed class PlOpPipe : PlOperatorClass
     public override void RegisterHandlers(PlOperatorRegistrator registrator)
     {
         base.RegisterHandlers(registrator);
-
-        registrator.AsVariadic<Detached<Variant>>().Function(Pipe);
+        
+        registrator.AsVariadic<Variant, Detached<Variant>>().Bundler(Pipe);
     }
 
-    public static ValueTask<Variant> Pipe(WeaveStep step, ReadOnlyMemory<Detached<Variant>> children)
+    public static ValueTask<IBundle<Variant>> Pipe(
+        WeaveStep step,
+        IReadOnlyBundle<Variant> bundle,
+        ReadOnlyMemory<Detached<Variant>> children)
     {
-        
         throw new NotImplementedException();
     }
 
