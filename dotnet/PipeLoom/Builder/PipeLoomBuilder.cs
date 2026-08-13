@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using PipeLoom.Engine;
 using PipeLoom.Engine.Abstractions;
 using PipeLoom.Engine.Abstractions.Registration;
+using PipeLoom.Types.Scalars;
+using PipeLoom.Types.Scalars.Numerical;
 
 namespace PipeLoom.Builder;
 
@@ -11,7 +13,9 @@ public sealed class PipeLoomBuilder : PipeLoomBuilder<PipeLoomBuilder>
     public static PipeLoomBuilder Create()
     {
         return new PipeLoomBuilder()
-            .AddCoreTypes();
+            .AddCoreTypes()
+            .AddCoreOperators()
+            .AddCoreConverters();
     }
     
     private PipeLoomBuilder() { }
@@ -28,7 +32,9 @@ public abstract class PipeLoomBuilder<TSelf> : IEngineConfig
     public List<Func<IPipeLoomEngine, PlOperatorClass>> OperatorClassFactories { get; set; } = [];
     
     public List<(string name, Func<PlOperatorRegistrator, PlOperatorRegistrator> regFunc)> OperatorFactories { get; set; } = [];
-    
+
+    public List<Action<ConverterRegistrator>> GlobalConverterRegistrations { get; set; } = [];
+
     protected TSelf Self => (TSelf)(object)this;
 
     public abstract PipeLoomEngine Build();
@@ -39,7 +45,22 @@ public abstract class PipeLoomBuilder<TSelf> : IEngineConfig
         this.AddType(engine => new PlVoid(engine));
         
         this.AddType(engine => new PlGenericDetached(engine));
+        this.AddType(engine => new PlGenericScalar(engine));
+
+        this.AddType(engine => new PlText(engine));
+        this.AddType(engine => new PlBool(engine));
         
+        this.AddType(engine => new PlByte(engine));
+        this.AddType(engine => new PlShort(engine));
+        this.AddType(engine => new PlInteger(engine));
+        this.AddType(engine => new PlLong(engine));
+        
+        this.AddType(engine => new PlUshort(engine));
+        this.AddType(engine => new PlUint(engine));
+        this.AddType(engine => new PlUlong(engine));
+        
+        this.AddType(engine => new PlDouble(engine));
+        this.AddType(engine => new PlDecimal(engine));
         
         return this.Self;
     }
@@ -50,10 +71,17 @@ public abstract class PipeLoomBuilder<TSelf> : IEngineConfig
         this.AddOperatorClass(d => new PlOpLog(d));
         
         this.AddOperatorClass(d => new PlOpSequence(d));
-        this.AddOperatorClass(d => new PlOpPipe(d));
+        //this.AddOperatorClass(d => new PlOpPipe(d));
         
         this.AddOperatorClass(d => new PlOpIsNull(d));
         this.AddOperatorClass(d => new PlOpIsNotNull(d));
+        
+        return this.Self;
+    }
+
+    public virtual TSelf AddCoreConverters()
+    {
+        this.AddConverters(CoreNumberConverters.AddStandardNumberConverters);
         
         return this.Self;
     }
@@ -68,13 +96,21 @@ public abstract class PipeLoomBuilder<TSelf> : IEngineConfig
     public virtual TSelf AddOperatorClass(Func<IPipeLoomEngine, PlOperatorClass> factory)
     {
         this.OperatorClassFactories.Add(factory);
+        
         return this.Self;
     }
 
     public virtual TSelf AddOperator(string name, Func<PlOperatorRegistrator, PlOperatorRegistrator> regFunc)
     {
         this.OperatorFactories.Add((name, regFunc));
+        
         return this.Self;
     }
-    
+
+    public virtual TSelf AddConverters(Action<ConverterRegistrator> convertible)
+    {
+        this.GlobalConverterRegistrations.Add(convertible);
+
+        return this.Self;
+    }
 }

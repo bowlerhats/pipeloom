@@ -6,6 +6,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionFolder", "SolutionF
 	ProjectSection(SolutionItems) = preProject
 		Directory.Build.props = Directory.Build.props
 		Directory.Build.targets = Directory.Build.targets
+		PipeLoom.sln.DotSettings = PipeLoom.sln.DotSettings
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PipeLoom.Analyzers", "PipeLoom.Analyzers\PipeLoom.Analyzers.csproj", "{897EB69A-C687-4B00-AE0F-07F064D8DD03}"

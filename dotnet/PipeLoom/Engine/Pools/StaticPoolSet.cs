@@ -1,54 +1,48 @@
 ﻿using System;
 using System.Buffers;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
+using System.Threading;
 using PipeLoom.Engine.Abstractions.Errors;
 
 namespace PipeLoom.Engine.Pools;
 
 internal sealed class StaticPoolSet : PoolSet
 {
-    private readonly ConcurrentDictionary<Type, object> _arrayPools = [];
-    private readonly ConcurrentDictionary<Type, object> _objectPools = [];
+    private readonly Lock _objectPoolFactoryLock = new();
     
-    public StaticPoolSet(IObjectPool<StaticPoolSet>? origin = null)
-        : base(origin is null ? null : self => origin.Return((StaticPoolSet)self))
-    {
-    }
-
+    private readonly ConcurrentDictionary<Type, object> _arrayPools = [];
+    private readonly ConcurrentDictionary<Type, IObjectPool> _objectPools = [];
+    
     protected override void Dispose(bool disposing)
     {
         if (disposing)
         {
-            _arrayPools.Clear();
-            
-            foreach (var pool in _objectPools.Values)
+            foreach (var (_, pool) in _objectPools)
             {
-                if (pool is IDisposable disposable)
-                    disposable.Dispose();
+                pool.Dispose();
             }
             
             _objectPools.Clear();
+            
+            _arrayPools.Clear();
         }
         
         base.Dispose(disposing);
     }
 
+    public override void ReleaseAllTouched()
+    {
+        foreach (var (_, pool) in _objectPools)
+        {
+            pool.ReleaseAll();
+        }
+    }
+
     public override ArrayPool<T> GetArrayPool<T>()
     {
         this.CheckDisposed();
-        
-        if (_arrayPools.TryGetValue(typeof(T), out var res))
-            return (ArrayPool<T>)res;
-        
-        res = ArrayPool<T>.Create();
-        if (!_arrayPools.TryAdd(typeof(T), res))
-        {
-            res = _arrayPools.GetValueOrDefault(typeof(T))
-                  ?? throw new PipeLoomException("Bad pool set");
-        }
 
-        return (ArrayPool<T>)res;
+        return (ArrayPool<T>)_arrayPools.GetOrAdd(typeof(T), static _ => ArrayPool<T>.Create());
     }
 
     public override IObjectPool<T> GetObjectPool<T>(int maxSize)
@@ -62,14 +56,20 @@ internal sealed class StaticPoolSet : PoolSet
         
         if (_objectPools.TryGetValue(typeof(T), out var res))
             return (IObjectPool<T>)res;
-        
-        res = new ObjectPool<T>(factory, maxSize);
-        if (!_objectPools.TryAdd(typeof(T), res))
+
+        lock (_objectPoolFactoryLock)
         {
-            res = _objectPools.GetValueOrDefault(typeof(T))
-                  ?? throw new PipeLoomException("Bad pool set");
+            if (_objectPools.TryGetValue(typeof(T), out res))
+                return (IObjectPool<T>)res;
+            
+            res = new ObjectPool<T>(factory, maxSize);
+            
+            if (_objectPools.TryAdd(typeof(T), res))
+                return (IObjectPool<T>)res;
+            
+            res.Dispose();
+                
+            throw new PipeLoomException("Concurrency error while creating object pool");
         }
-        
-        return (IObjectPool<T>)res;
     }
 }

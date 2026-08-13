@@ -3,7 +3,48 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace PipeLoom.Engine.Pools;
 
-public interface IObjectPool<T> : IDisposable
+public interface IObjectPool : IDisposable
+{
+    /// <summary>
+    /// Releases a tracked lease and returns the item to the pool.
+    /// </summary>
+    /// <remarks>
+    /// Prefer disposing the <see cref="Lease{T}"/> directly over calling this method.
+    /// This method is intended as a callback for the <see cref="Lease{T}.Release"/> itself.
+    /// </remarks>
+    /// <param name="ticket">The ticket issued when the lease was created.</param>
+    /// <exception cref="InvalidOperationException">Thrown when the ticket is not found in the lease tracking.</exception>
+    void Release(long ticket);
+    
+    /// <summary>
+    /// Removes a tracked lease without returning the item to the pool.
+    /// </summary>
+    /// <remarks>
+    /// After forgetting, the item must be manually returned via <see cref="Return"/> if it is no longer needed. <br/>
+    /// Prefer <see cref="Lease{T}.Forget"/> over calling this method directly.
+    /// </remarks>
+    /// <param name="ticket">The ticket issued when the lease was created.</param>
+    /// <exception cref="InvalidOperationException">Thrown when the ticket is not found in the lease tracking.</exception>
+    void Forget(long ticket);
+    
+    /// <summary>
+    /// Clears the pool and optionally forcefully disposes all active leases.
+    /// </summary>
+    /// <remarks>
+    /// When <paramref name="alsoLeases"/> is <see langword="true"/>, any outstanding
+    /// <see cref="Lease{T}"/> will become invalid and throw on subsequent access or disposal.
+    /// </remarks>
+    /// <param name="alsoLeases">If <see langword="true"/>, also disposes and untracks all active leases.</param>
+    void Clear(bool alsoLeases = false);
+
+    /// <summary>
+    /// Releases all active leases and returns the leased items to the pool
+    /// </summary>
+    /// <remarks>It does a best effort to release everything. Race conditions might leave leases active</remarks>
+    void ReleaseAll();
+}
+
+public interface IObjectPool<T> : IObjectPool
 {
     /// <summary>
     /// Rents an item from the pool and returns it as a tracked lease.
@@ -60,28 +101,6 @@ public interface IObjectPool<T> : IDisposable
     T GetLeasedItem(long ticket);
     
     /// <summary>
-    /// Releases a tracked lease and returns the item to the pool.
-    /// </summary>
-    /// <remarks>
-    /// Prefer disposing the <see cref="Lease{T}"/> directly over calling this method.
-    /// This method is intended as a callback for the <see cref="Lease{T}.Release"/> itself.
-    /// </remarks>
-    /// <param name="ticket">The ticket issued when the lease was created.</param>
-    /// <exception cref="InvalidOperationException">Thrown when the ticket is not found in the lease tracking.</exception>
-    void Release(long ticket);
-    
-    /// <summary>
-    /// Removes a tracked lease without returning the item to the pool.
-    /// </summary>
-    /// <remarks>
-    /// After forgetting, the item must be manually returned via <see cref="Return"/> if it is no longer needed. <br/>
-    /// Prefer <see cref="Lease{T}.Forget"/> over calling this method directly.
-    /// </remarks>
-    /// <param name="ticket">The ticket issued when the lease was created.</param>
-    /// <exception cref="InvalidOperationException">Thrown when the ticket is not found in the lease tracking.</exception>
-    void Forget(long ticket);
-    
-    /// <summary>
     /// Returns an untracked item to the pool.
     /// </summary>
     /// <remarks>
@@ -104,14 +123,4 @@ public interface IObjectPool<T> : IDisposable
     /// <param name="rented">Item pulled from the pool.</param>
     /// <returns><see langword="true"/> if an item was available; <see langword="false"/> if the pool is exhausted.</returns>
     bool TryRentNoCreate([MaybeNullWhen(false)] out T rented);
-    
-    /// <summary>
-    /// Clears the pool and optionally forcefully disposes all active leases.
-    /// </summary>
-    /// <remarks>
-    /// When <paramref name="alsoLeases"/> is <see langword="true"/>, any outstanding
-    /// <see cref="Lease{T}"/> will become invalid and throw on subsequent access or disposal.
-    /// </remarks>
-    /// <param name="alsoLeases">If <see langword="true"/>, also disposes and untracks all active leases.</param>
-    void Clear(bool alsoLeases = false);
 }

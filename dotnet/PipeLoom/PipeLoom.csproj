@@ -55,6 +55,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Engine\Abstractions\Conversions\" />
     <Folder Include="Engine\Errors\" />
   </ItemGroup>
 

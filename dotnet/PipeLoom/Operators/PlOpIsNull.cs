@@ -1,5 +1,4 @@
-﻿using PipeLoom.Engine;
-using PipeLoom.Engine.Abstractions;
+﻿using PipeLoom.Engine.Abstractions;
 using PipeLoom.Engine.Abstractions.Registration;
 
 namespace PipeLoom.Operators;
@@ -14,12 +13,13 @@ public class PlOpIsNull : PlOperatorClass
     {
         base.RegisterHandlers(registrator);
 
-        registrator.Unary(IsNull);
+        registrator.AsUnary<Variant>().Function(IsNull);
     }
     
-    public static Variant IsNull(scoped in Variant v)
+    public static bool IsNull(Variant v)
     {
-        var isnull = v.IsUndefined || v is { IsReference: true, Reference: null };
-        return Variant.From(isnull);
+        var isnull = v.IsUndefined || v is { IsPureReference: true, Reference: null };
+        
+        return isnull;
     }
 }

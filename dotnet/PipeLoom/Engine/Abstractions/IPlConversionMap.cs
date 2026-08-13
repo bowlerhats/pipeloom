@@ -1,9 +1,16 @@
-﻿using System;
+﻿using PipeLoom.Engine.TypeConversions;
 
 namespace PipeLoom.Engine.Abstractions;
 
 public interface IPlConversionMap
 {
-    Converter<T, Variant> ToVariant<T>();
-    Converter<Variant, T> FromVariant<T>();
+    VariantPacker<T>? FindCustomVariantPacker<T>();
+    VariantUnpacker<T>? FindCustomVariantUnpacker<T>();
+
+    bool IsConvertible(PlTypeDef from, PlTypeDef to);
+    Variant Convert(scoped in Variant value, PlTypeDef target);
+
+    internal void Add(PlTypeDef def);
+    internal void Add<TConverter>(TConverter converter)
+        where TConverter : PlConverter;
 }

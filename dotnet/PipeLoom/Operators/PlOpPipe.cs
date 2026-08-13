@@ -23,6 +23,8 @@ public sealed class PlOpPipe : PlOperatorClass
         
         registrator.AsVariadic<Variant, Detached<Variant>>().Bundler(Pipe);
     }
+    
+    
 
     public static ValueTask<IBundle<Variant>> Pipe(
         WeaveStep step,

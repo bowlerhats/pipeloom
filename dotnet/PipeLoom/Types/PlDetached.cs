@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using PipeLoom.Engine;
 using PipeLoom.Engine.Abstractions;
 
 namespace PipeLoom.Types;
@@ -20,10 +21,11 @@ public sealed class PlGenericDetached : PlGenericType
     }
 }
 
-public sealed class PlDetached : PlTypeDef, IPlConstructed<PlGenericDetached>
+public sealed class PlDetached : PlTypeDef, IPlConstructed<PlGenericDetached>, IPlCustomInputArgProvider
 {
     public override string Name { get; }
     public override PlTypeCardinality Cardinality => PlTypeCardinality.Unknown;
+    public override bool IsFloating => false;
     
     public override Type NativeType { get; }
     public PlGenericDetached GenericType { get; }
@@ -46,22 +48,14 @@ public sealed class PlDetached : PlTypeDef, IPlConstructed<PlGenericDetached>
         this.Name = $"Detached<{innerType.Name}>";
     }
 
-    public override bool IsAssignableTo(PlTypeDef other)
-    {
-        if (base.IsAssignableTo(other))
-            return true;
-
-        return this.InnerType == other;
-    }
-
-    public override Variant AssignTo(Variant value, PlTypeDef target)
-    {
-        
-        return base.AssignTo(value, target);
-    }
-
     protected override Variant GetDefaultValue()
     {
-        throw new NotImplementedException();
+        throw new NotSupportedException();
+    }
+
+    public bool TryProvide(IStepState state, int childIndex, out Variant providedInputArg)
+    {
+        providedInputArg = Variant.From(new Detached<Variant>((StepState)state, childIndex));
+        return true;
     }
 }

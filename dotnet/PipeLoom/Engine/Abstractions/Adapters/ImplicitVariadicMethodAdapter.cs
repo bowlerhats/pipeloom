@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using PipeLoom.Engine.TypeConversions;
 
 namespace PipeLoom.Engine.Abstractions.Adapters;
 
@@ -8,18 +9,24 @@ internal sealed class ImplicitVariadicMethodAdapter<TImplicit, TVariadic, TResul
 {
     public override PlOperatorArity Arity => PlOperatorArity.Variadic;
     
-    private Converter<Variant, TImplicit> ImplicitConverter { get; }
+    private VariantUnpacker<TImplicit>? ImplicitUnpacker { get; }
     
-    private Converter<Variant, TVariadic> ParamConverter { get; }
+    private VariantUnpacker<TVariadic> ParamUnpacker { get; }
     
-    private Converter<TResult, Variant> ResultConverter { get; }
+    private PlTypeDef ResultType { get; }
+    private VariantPacker<TResult>? ResultPacker { get; }
     
     public ImplicitVariadicMethodAdapter(IPipeLoomEngine engine)
         : base(engine)
     {
-        this.ImplicitConverter = engine.Conversions.FromVariant<TImplicit>();
-        this.ParamConverter = engine.Conversions.FromVariant<TVariadic>();
-        this.ResultConverter = engine.Conversions.ToVariant<TResult>();
+        this.ImplicitUnpacker = engine.Conversions.FindCustomVariantUnpacker<TImplicit>();
+        
+        this.ParamUnpacker
+            = engine.Conversions.FindCustomVariantUnpacker<TVariadic>()
+              ?? (static (scoped in v) => v.Unpack<TVariadic>());
+        
+        this.ResultType = engine.TypeOf<TResult>();
+        this.ResultPacker = engine.Conversions.FindCustomVariantPacker<TResult>();
     }
     
     [OverloadResolutionPriority(1)]
@@ -62,12 +69,12 @@ internal sealed class ImplicitVariadicMethodAdapter<TImplicit, TVariadic, TResul
         {
             var args = arguments.Span;
             
-            using var recaster = new VariantRecaster<TVariadic>(state.PoolSet.GetArrayPool<TVariadic>(), this.ParamConverter, args[1..]);
+            using var recaster = new VariantRecaster<TVariadic>(state.PoolSet.GetArrayPool<TVariadic>(), this.ParamUnpacker, args[1..]);
 
-            var p1 = this.ImplicitConverter(args[0]);
+            var p1 = this.ImplicitUnpacker is not null ? this.ImplicitUnpacker(in args[0]) : args[0].Unpack<TImplicit>();
             var res = op(p1, recaster.Memory);
 
-            return ValueTask.FromResult(this.ResultConverter(res));
+            return ValueTask.FromResult(PackResult(in res, this.ResultType, this.ResultPacker));
         };
     }
     
@@ -76,14 +83,14 @@ internal sealed class ImplicitVariadicMethodAdapter<TImplicit, TVariadic, TResul
         return (state, arguments) =>
         {
             var args = arguments.Span;
-            using var recaster = new VariantRecaster<TVariadic>(state.PoolSet.GetArrayPool<TVariadic>(), this.ParamConverter, args[1..]);
+            using var recaster = new VariantRecaster<TVariadic>(state.PoolSet.GetArrayPool<TVariadic>(), this.ParamUnpacker, args[1..]);
 
             var step = new WeaveStep(state);
             
-            var p1 = this.ImplicitConverter(args[0]);
+            var p1 = this.ImplicitUnpacker is not null ? this.ImplicitUnpacker(in args[0]) : args[0].Unpack<TImplicit>();
             var res = op(step, p1, recaster.Memory);
 
-            return ValueTask.FromResult(this.ResultConverter(res));
+            return ValueTask.FromResult(PackResult(in res, this.ResultType, this.ResultPacker));
         };
     }
     
@@ -92,12 +99,12 @@ internal sealed class ImplicitVariadicMethodAdapter<TImplicit, TVariadic, TResul
         return async (state, arguments) =>
         {
             var args = arguments.Span;
-            using var recaster = new VariantRecaster<TVariadic>(state.PoolSet.GetArrayPool<TVariadic>(), this.ParamConverter, args[1..]);
+            using var recaster = new VariantRecaster<TVariadic>(state.PoolSet.GetArrayPool<TVariadic>(), this.ParamUnpacker, args[1..]);
 
-            var p1 = this.ImplicitConverter(args[0]);
+            var p1 = this.ImplicitUnpacker is not null ? this.ImplicitUnpacker(in args[0]) : args[0].Unpack<TImplicit>();
             var res = await op(p1, recaster.Memory);
 
-            return this.ResultConverter(res);
+            return PackResult(in res, this.ResultType, this.ResultPacker);
         };
     }
     
@@ -106,14 +113,14 @@ internal sealed class ImplicitVariadicMethodAdapter<TImplicit, TVariadic, TResul
         return async (state, arguments) =>
         {
             var args = arguments.Span;
-            using var recaster = new VariantRecaster<TVariadic>(state.PoolSet.GetArrayPool<TVariadic>(), this.ParamConverter, in args);
+            using var recaster = new VariantRecaster<TVariadic>(state.PoolSet.GetArrayPool<TVariadic>(), this.ParamUnpacker, in args);
 
             var step = new WeaveStep(state);
             
-            var p1 = this.ImplicitConverter(args[0]);
+            var p1 = this.ImplicitUnpacker is not null ? this.ImplicitUnpacker(in args[0]) : args[0].Unpack<TImplicit>();
             var res = await op(step, p1, recaster.Memory);
 
-            return this.ResultConverter(res);
+            return PackResult(in res, this.ResultType, this.ResultPacker);
         };
     }
 }

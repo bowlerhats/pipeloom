@@ -10,25 +10,6 @@ using PipeLoom.Operators.Abstractions.Handlers;
 
 namespace PipeLoom.Operators.Abstractions;
 
-[Flags]
-public enum PreFuseFlags
-{
-    None = 0,
-    SkipChildFuse = 1
-}
-
-[Flags]
-public enum PostFuseFlags
-{
-    None = 0
-}
-
-[Flags]
-public enum NodeFuseFlags
-{
-    None = 0,
-    // DiscardSelf = 2
-}
 
 public abstract class PlOperatorClass //: IPlOperatorClass
 {
@@ -45,7 +26,7 @@ public abstract class PlOperatorClass //: IPlOperatorClass
     public IPipeLoomEngine Engine { get; }
 
     public IReadOnlyList<OperatorHandler> Handlers => _handlers;
-
+    
     private List<OperatorHandler> _handlers = [];
     
     protected PlOperatorClass(IPipeLoomEngine engine, string name)
@@ -105,21 +86,23 @@ public abstract class PlOperatorClass //: IPlOperatorClass
     //     }
     // }
 
-    internal OperatorHandler? FindMostSpecific(HandlerSignature signature)
+    internal OperatorHandler? FindMostSpecific(HandlerSignature searched)
     {
-        ArgumentNullException.ThrowIfNull(signature);
+        ArgumentNullException.ThrowIfNull(searched);
 
         OperatorHandler? res = null;
         
+        // Search for a direct one
         foreach (var handler in _handlers)
         {
-            if (!signature.IsSuperSetOf(handler.Signature))
-                continue;
+            if (!searched.IsSuperSetOf(handler.Signature))
+                continue; // handler is out of bounds of search signature
 
             res ??= handler;
             
             if (handler.Signature.IsStrictSubSetOf(res.Signature))
             {
+                // found a narrower match 
                 res = handler;
             }
         }

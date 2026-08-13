@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using PipeLoom.Engine.TypeConversions;
 
 namespace PipeLoom.Engine.Abstractions.Adapters;
 
@@ -31,5 +32,16 @@ public abstract partial class MethodAdapter
         ArgumentNullException.ThrowIfNull(caller);
         
         this.Caller = caller;
+    }
+
+    protected static Variant PackResult<TResult>(in TResult result, PlTypeDef resultType, VariantPacker<TResult>? packer)
+    {
+        if (typeof(TResult) == typeof(Variant))
+        {
+            return Variant.VerbatimCopyUnsafe(result);
+        }
+
+        // ReSharper disable once MergeConditionalExpression justification: because it would cause an unnecessary Nullable<> wrap
+        return packer is not null ? packer(in result) : Variant.From(result, resultType);
     }
 }

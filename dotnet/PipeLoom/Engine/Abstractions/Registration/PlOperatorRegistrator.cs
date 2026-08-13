@@ -46,25 +46,25 @@ public abstract class PlOperatorRegistrator
     public PlOperatorRegistrator Nullary(PlOperatorDelegates.NullaryFunction op, Action<NullaryHandler> config) => this.Nullary(op, HandlerConfig.From(config));
     public virtual PlOperatorRegistrator Nullary(PlOperatorDelegates.NullaryFunction op, HandlerConfig<NullaryHandler> config = default)
     {
-        return this.Nullary(MethodAdapter.Nullary(this.OperatorClass.Engine, () => op()));
+        return this.Nullary(MethodAdapter.Nullary(this.OperatorClass.Engine, () => op()), config);
     }
     
     public PlOperatorRegistrator Nullary(PlOperatorDelegates.NullaryFunctionWithStep op, Action<NullaryHandler> config) => this.Nullary(op, HandlerConfig.From(config));
     public virtual PlOperatorRegistrator Nullary(PlOperatorDelegates.NullaryFunctionWithStep op, HandlerConfig<NullaryHandler> config = default)
     {
-        return this.Nullary(MethodAdapter.Nullary(this.OperatorClass.Engine, step => op(step)));
+        return this.Nullary(MethodAdapter.Nullary(this.OperatorClass.Engine, step => op(step)), config);
     }
     
     public PlOperatorRegistrator Nullary(PlOperatorDelegates.NullaryFunctionAsync op, Action<NullaryHandler> config) => this.Nullary(op, HandlerConfig.From(config));
     public virtual PlOperatorRegistrator Nullary(PlOperatorDelegates.NullaryFunctionAsync op, HandlerConfig<NullaryHandler> config = default)
     {
-        return this.Nullary(MethodAdapter.Nullary(this.OperatorClass.Engine, () => op()));
+        return this.Nullary(MethodAdapter.Nullary(this.OperatorClass.Engine, () => op()), config);
     }
     
     public PlOperatorRegistrator Nullary(PlOperatorDelegates.NullaryFunctionAsyncWithStep op, Action<NullaryHandler> config) => this.Nullary(op, HandlerConfig.From(config));
     public virtual PlOperatorRegistrator Nullary(PlOperatorDelegates.NullaryFunctionAsyncWithStep op, HandlerConfig<NullaryHandler> config = default)
     {
-        return this.Nullary(MethodAdapter.Nullary(this.OperatorClass.Engine, step => op(step)));
+        return this.Nullary(MethodAdapter.Nullary(this.OperatorClass.Engine, step => op(step)), config);
     }
     
     #endregion
@@ -93,25 +93,25 @@ public abstract class PlOperatorRegistrator
     public PlOperatorRegistrator Unary(PlOperatorDelegates.UnaryFunction op, Action<UnaryHandler> action) => this.Unary(op, HandlerConfig.From(action));
     public virtual PlOperatorRegistrator Unary(PlOperatorDelegates.UnaryFunction op, HandlerConfig<UnaryHandler> config = default)
     {
-        return this.Nullary(MethodAdapter.Unary<Variant, Variant>(this.OperatorClass.Engine, t1 => op(t1)));
+        return this.Unary(MethodAdapter.Unary<Variant, Variant>(this.OperatorClass.Engine, t1 => op(t1)), config);
     }
     
     public PlOperatorRegistrator Unary(PlOperatorDelegates.UnaryFunctionWithStep op, Action<UnaryHandler> action) => this.Unary(op, HandlerConfig.From(action));
     public virtual PlOperatorRegistrator Unary(PlOperatorDelegates.UnaryFunctionWithStep op, HandlerConfig<UnaryHandler> config = default)
     {
-        return this.Nullary(MethodAdapter.Unary<Variant, Variant>(this.OperatorClass.Engine, (step, t1) => op(step, t1)));
+        return this.Unary(MethodAdapter.Unary<Variant, Variant>(this.OperatorClass.Engine, (step, t1) => op(step, t1)), config);
     }
     
     public PlOperatorRegistrator Unary(PlOperatorDelegates.UnaryFunctionAsync op, Action<UnaryHandler> action) => this.Unary(op, HandlerConfig.From(action));
     public virtual PlOperatorRegistrator Unary(PlOperatorDelegates.UnaryFunctionAsync op, HandlerConfig<UnaryHandler> config = default)
     {
-        return this.Nullary(MethodAdapter.Unary<Variant, Variant>(this.OperatorClass.Engine, t1 => op(t1)));
+        return this.Unary(MethodAdapter.Unary<Variant, Variant>(this.OperatorClass.Engine, t1 => op(t1)), config);
     }
     
     public PlOperatorRegistrator Unary(PlOperatorDelegates.UnaryFunctionAsyncWithStep op, Action<UnaryHandler> action) => this.Unary(op, HandlerConfig.From(action));
     public virtual PlOperatorRegistrator Unary(PlOperatorDelegates.UnaryFunctionAsyncWithStep op, HandlerConfig<UnaryHandler> config = default)
     {
-        return this.Nullary(MethodAdapter.Unary<Variant, Variant>(this.OperatorClass.Engine, (step, t1) => op(step, t1)));
+        return this.Unary(MethodAdapter.Unary<Variant, Variant>(this.OperatorClass.Engine, (step, t1) => op(step, t1)), config);
     }
     
     #endregion
@@ -146,25 +146,25 @@ public abstract class PlOperatorRegistrator
     public PlOperatorRegistrator Binary(PlOperatorDelegates.BinaryFunction op, Action<BinaryHandler> config) => this.Binary(op, HandlerConfig.From(config));
     public virtual PlOperatorRegistrator Binary(PlOperatorDelegates.BinaryFunction op, HandlerConfig<BinaryHandler> config = default)
     {
-        return this.Binary(MethodAdapter.Binary<Variant, Variant, Variant>(this.OperatorClass.Engine, (t1, t2) => op(t1, t2)));
+        return this.Binary(MethodAdapter.Binary<Variant, Variant, Variant>(this.OperatorClass.Engine, (t1, t2) => op(t1, t2)), config);
     }
     
     public PlOperatorRegistrator Binary(PlOperatorDelegates.BinaryFunctionWithStep op, Action<BinaryHandler> config) => this.Binary(op, HandlerConfig.From(config));
     public virtual PlOperatorRegistrator Binary(PlOperatorDelegates.BinaryFunctionWithStep op, HandlerConfig<BinaryHandler> config = default)
     {
-        return this.Binary(MethodAdapter.Binary<Variant, Variant, Variant>(this.OperatorClass.Engine, (step, t1, t2) => op(step, t1, t2)));
+        return this.Binary(MethodAdapter.Binary<Variant, Variant, Variant>(this.OperatorClass.Engine, (step, t1, t2) => op(step, t1, t2)), config);
     }
     
     public PlOperatorRegistrator Binary(PlOperatorDelegates.BinaryFunctionAsync op, Action<BinaryHandler> config) => this.Binary(op, HandlerConfig.From(config));
     public virtual PlOperatorRegistrator Binary(PlOperatorDelegates.BinaryFunctionAsync op, HandlerConfig<BinaryHandler> config = default)
     {
-        return this.Binary(MethodAdapter.Binary<Variant, Variant, Variant>(this.OperatorClass.Engine, (t1, t2) => op(t1, t2)));
+        return this.Binary(MethodAdapter.Binary<Variant, Variant, Variant>(this.OperatorClass.Engine, (t1, t2) => op(t1, t2)), config);
     }
     
     public PlOperatorRegistrator Binary(PlOperatorDelegates.BinaryFunctionAsyncWithStep op, Action<BinaryHandler> config) => this.Binary(op, HandlerConfig.From(config));
     public virtual PlOperatorRegistrator Binary(PlOperatorDelegates.BinaryFunctionAsyncWithStep op, HandlerConfig<BinaryHandler> config = default)
     {
-        return this.Binary(MethodAdapter.Binary<Variant, Variant, Variant>(this.OperatorClass.Engine, (step, t1, t2) => op(step, t1, t2)));
+        return this.Binary(MethodAdapter.Binary<Variant, Variant, Variant>(this.OperatorClass.Engine, (step, t1, t2) => op(step, t1, t2)), config);
     }
     
     #endregion
@@ -193,25 +193,25 @@ public abstract class PlOperatorRegistrator
     public PlOperatorRegistrator Ternary(PlOperatorDelegates.TernaryFunction op, Action<TernaryHandler> config) => this.Ternary(op, HandlerConfig.From(config));
     public virtual PlOperatorRegistrator Ternary(PlOperatorDelegates.TernaryFunction op, HandlerConfig<TernaryHandler> config = default)
     {
-        return this.Ternary(MethodAdapter.Ternary<Variant, Variant, Variant, Variant>(this.OperatorClass.Engine, (t1, t2, t3) => op(t1, t2, t3)));
+        return this.Ternary(MethodAdapter.Ternary<Variant, Variant, Variant, Variant>(this.OperatorClass.Engine, (t1, t2, t3) => op(t1, t2, t3)), config);
     }
     
     public PlOperatorRegistrator Ternary(PlOperatorDelegates.TernaryFunctionWithStep op, Action<TernaryHandler> config) => this.Ternary(op, HandlerConfig.From(config));
     public virtual PlOperatorRegistrator Ternary(PlOperatorDelegates.TernaryFunctionWithStep op, HandlerConfig<TernaryHandler> config = default)
     {
-        return this.Ternary(MethodAdapter.Ternary<Variant, Variant, Variant, Variant>(this.OperatorClass.Engine, (step, t1, t2, t3) => op(step, t1, t2, t3)));
+        return this.Ternary(MethodAdapter.Ternary<Variant, Variant, Variant, Variant>(this.OperatorClass.Engine, (step, t1, t2, t3) => op(step, t1, t2, t3)), config);
     }
     
     public PlOperatorRegistrator Ternary(PlOperatorDelegates.TernaryFunctionAsync op, Action<TernaryHandler> config) => this.Ternary(op, HandlerConfig.From(config));
     public virtual PlOperatorRegistrator Ternary(PlOperatorDelegates.TernaryFunctionAsync op, HandlerConfig<TernaryHandler> config = default)
     {
-        return this.Ternary(MethodAdapter.Ternary<Variant, Variant, Variant, Variant>(this.OperatorClass.Engine, (t1, t2, t3) => op(t1, t2, t3)));
+        return this.Ternary(MethodAdapter.Ternary<Variant, Variant, Variant, Variant>(this.OperatorClass.Engine, (t1, t2, t3) => op(t1, t2, t3)), config);
     }
     
     public PlOperatorRegistrator Ternary(PlOperatorDelegates.TernaryFunctionAsyncWithStep op, Action<TernaryHandler> config) => this.Ternary(op, HandlerConfig.From(config));
     public virtual PlOperatorRegistrator Ternary(PlOperatorDelegates.TernaryFunctionAsyncWithStep op, HandlerConfig<TernaryHandler> config = default)
     {
-        return this.Ternary(MethodAdapter.Ternary<Variant, Variant, Variant, Variant>(this.OperatorClass.Engine, (step, t1, t2, t3) => op(step, t1, t2, t3)));
+        return this.Ternary(MethodAdapter.Ternary<Variant, Variant, Variant, Variant>(this.OperatorClass.Engine, (step, t1, t2, t3) => op(step, t1, t2, t3)), config);
     }
     
     #endregion

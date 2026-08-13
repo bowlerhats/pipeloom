@@ -13,5 +13,5 @@ internal interface IEngineConfig
     
     public List<(string name, Func<PlOperatorRegistrator, PlOperatorRegistrator> regFunc)> OperatorFactories { get; }
     
-    
+    public List<Action<ConverterRegistrator>> GlobalConverterRegistrations { get; }
 }

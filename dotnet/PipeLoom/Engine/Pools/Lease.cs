@@ -49,6 +49,21 @@ public readonly struct Lease<T>: IDisposable
     {
         this.Release();
     }
+
+    public Lease<TAlter> As<TAlter>()
+    {
+        if (!typeof(TAlter).IsAssignableFrom(typeof(T)))
+        {
+            throw new InvalidCastException($"Lease of type '{typeof(T).Name}' cannot be assigned to requested type '{typeof(TAlter).Name}' ");
+        }
+        
+        if (this.IsTracked)
+            return new Lease<TAlter>(_ticket, (IObjectPool<TAlter>)_pool);
+
+        return _captured is TAlter alter
+            ? new Lease<TAlter>(alter, (IObjectPool<TAlter>)_pool)
+            : throw new InvalidCastException($"Captured lease of type '{typeof(T).Name}' cannot be cast to requested type '{typeof(TAlter).Name}' ");
+    }
     
     /// <summary>
     /// Removes lease tracking without returning the item to the pool.

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using PipeLoom.Engine.TypeConversions;
 
 namespace PipeLoom.Engine.Abstractions.Adapters;
 
@@ -8,15 +9,20 @@ internal sealed class HomogenicMethodAdapter<TVariadic, TResult> : MethodAdapter
 {
     public override PlOperatorArity Arity => PlOperatorArity.Variadic;
     
-    private Converter<Variant, TVariadic> ParamConverter { get; }
+    private VariantUnpacker<TVariadic> ParamUnpacker { get; }
     
-    private Converter<TResult, Variant> ResultConverter { get; }
+    private PlTypeDef ResultType { get; }
+    private VariantPacker<TResult>? ResultPacker { get; }
     
     public HomogenicMethodAdapter(IPipeLoomEngine engine)
         : base(engine)
     {
-        this.ParamConverter = engine.Conversions.FromVariant<TVariadic>();
-        this.ResultConverter = engine.Conversions.ToVariant<TResult>();
+        this.ParamUnpacker
+            = engine.Conversions.FindCustomVariantUnpacker<TVariadic>()
+              ?? (static (scoped in v) => v.Unpack<TVariadic>());
+        
+        this.ResultType = engine.TypeOf<TResult>();
+        this.ResultPacker = engine.Conversions.FindCustomVariantPacker<TResult>();
     }
     
     [OverloadResolutionPriority(1)]
@@ -58,11 +64,11 @@ internal sealed class HomogenicMethodAdapter<TVariadic, TResult> : MethodAdapter
         return (state, arguments) =>
         {
             var args = arguments.Span;
-            using var recaster = new VariantRecaster<TVariadic>(state.PoolSet.GetArrayPool<TVariadic>(), this.ParamConverter, in args);
+            using var recaster = new VariantRecaster<TVariadic>(state.PoolSet.GetArrayPool<TVariadic>(), this.ParamUnpacker, in args);
 
             var res = op(recaster.Memory);
 
-            return ValueTask.FromResult(this.ResultConverter(res));
+            return ValueTask.FromResult(PackResult(in res, this.ResultType, this.ResultPacker));
         };
     }
     
@@ -71,13 +77,13 @@ internal sealed class HomogenicMethodAdapter<TVariadic, TResult> : MethodAdapter
         return (state, arguments) =>
         {
             var args = arguments.Span;
-            using var recaster = new VariantRecaster<TVariadic>(state.PoolSet.GetArrayPool<TVariadic>(), this.ParamConverter, in args);
+            using var recaster = new VariantRecaster<TVariadic>(state.PoolSet.GetArrayPool<TVariadic>(), this.ParamUnpacker, in args);
 
             var step = new WeaveStep(state);
             
             var res = op(step, recaster.Memory);
 
-            return ValueTask.FromResult(this.ResultConverter(res));
+            return ValueTask.FromResult(PackResult(in res, this.ResultType, this.ResultPacker));
         };
     }
     
@@ -86,11 +92,11 @@ internal sealed class HomogenicMethodAdapter<TVariadic, TResult> : MethodAdapter
         return async (state, arguments) =>
         {
             var args = arguments.Span;
-            using var recaster = new VariantRecaster<TVariadic>(state.PoolSet.GetArrayPool<TVariadic>(), this.ParamConverter, in args);
+            using var recaster = new VariantRecaster<TVariadic>(state.PoolSet.GetArrayPool<TVariadic>(), this.ParamUnpacker, in args);
 
             var res = await op(recaster.Memory);
 
-            return this.ResultConverter(res);
+            return PackResult(in res, this.ResultType, this.ResultPacker);
         };
     }
     
@@ -99,13 +105,13 @@ internal sealed class HomogenicMethodAdapter<TVariadic, TResult> : MethodAdapter
         return async (state, arguments) =>
         {
             var args = arguments.Span;
-            using var recaster = new VariantRecaster<TVariadic>(state.PoolSet.GetArrayPool<TVariadic>(), this.ParamConverter, in args);
+            using var recaster = new VariantRecaster<TVariadic>(state.PoolSet.GetArrayPool<TVariadic>(), this.ParamUnpacker, in args);
 
             var step = new WeaveStep(state);
             
             var res = await op(step, recaster.Memory);
 
-            return this.ResultConverter(res);
+            return PackResult(in res, this.ResultType, this.ResultPacker);
         };
     }
 }

@@ -20,6 +20,7 @@ public sealed class WeaveNode : IWeaveNode
     public IPipeLoomEngine Engine => this.Plan.Engine;
 
     public IReadOnlyList<WeaveNode> Children => _children;
+    IReadOnlyList<IWeaveNode> IWeaveNode.Children => this.Children;
 
     public IEnumerable<WeaveNode> Arguments => _children.Where(d => d.IsArgument);
     
@@ -66,13 +67,13 @@ public sealed class WeaveNode : IWeaveNode
 
     public WeaveNode AppendOperator(string operatorName)
     {
-        throw new NotImplementedException();
+        return new WeaveNode(this.Plan, operatorName, this);
     }
 
     public void AppendValue<T>(T value)
     {
         var node = this.AppendOperator("const");
-        node.ImplicitValue = Variant.From(this.Engine, value);
+        node.ImplicitValue = Variant.From(value, this.Engine);
     }
     
     internal async ValueTask Fuse()
@@ -99,7 +100,7 @@ public sealed class WeaveNode : IWeaveNode
         if (this.Handler is null)
         {
             var expectedTypeDesc =
-                $"({string.Join(',', _children.Select(d => d.ReturnType.Name))}) -> {this.ReturnType.Name}";
+                $"({string.Join(',', _children.Select(d => d.ReturnType.Name))}) : {this.ReturnType.Name}";
             
             throw new PipeLoomException($"Can't find handler for {this.OperatorName}: {expectedTypeDesc}");
         }
@@ -110,9 +111,9 @@ public sealed class WeaveNode : IWeaveNode
         
         await this.OperatorClass.PostFuse(this);
 
-        if (this.RequiredReturnType is not null && !this.ReturnType.IsAssignableTo(this.RequiredReturnType))
+        if (this.RequiredReturnType is not null && !this.ReturnType.IsConvertibleTo(this.RequiredReturnType))
         {
-            throw new PipeLoomException($"A node of {this.OperatorName} tries to return a type if '{this.ReturnType.Name}', but it is expected to provide '{this.RequiredReturnType.Name}'");
+            throw new PipeLoomException($"A node of '{this.OperatorName}' tries to return a type of '{this.ReturnType.Name}', but it is expected to provide '{this.RequiredReturnType.Name}'");
         }
         
         this.IsFused = true;

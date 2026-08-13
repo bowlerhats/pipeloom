@@ -56,7 +56,7 @@ public abstract class OperatorHandler
     {
         if (node.NarrowedReturnType is not null)
         {
-            return node.NarrowedReturnType.IsAssignableTo(this.Signature.ReturnType)
+            return node.NarrowedReturnType.IsConvertibleTo(this.Signature.ReturnType)
                 ? node.NarrowedReturnType
                 : this.Signature.ReturnType;
         }

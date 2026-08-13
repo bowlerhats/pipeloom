@@ -21,7 +21,7 @@ public static class PlOperatorArityExtensions {
             1 => PlOperatorArity.Unary,
             2 => PlOperatorArity.Binary,
             3 => PlOperatorArity.Ternary,
-            4 => PlOperatorArity.Variadic,
+            >= 4 => PlOperatorArity.Variadic,
             _ => throw new ArgumentOutOfRangeException(nameof(arity))
         };
     }

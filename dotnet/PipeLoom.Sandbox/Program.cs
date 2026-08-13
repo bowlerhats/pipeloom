@@ -11,13 +11,18 @@ internal class Program
     {
         var engine = PipeLoomBuilder.Create().Build();
 
-        var plan = new WeavePlan(engine);
-        plan.RootNode
-            .AppendOperator("log")
-            .AppendValue("TEST");
-
-        var res = await engine.Execute(plan);
+        using var plan = new WeavePlan(engine);
+        plan.RootNode.AppendOperator("log").AppendValue("TEST");
+        plan.RootNode.AppendOperator("log").AppendValue("TEST2");
+        //plan.RootNode.AppendOperator("const").AppendValue("RES");
+        plan.RootNode.AppendValue((decimal)1.33);
+        
+        var res = await engine.Execute<double>(plan);
+        
+        Console.WriteLine(res);
         
         Console.WriteLine("Hello, World!");
+
+
     }
 }

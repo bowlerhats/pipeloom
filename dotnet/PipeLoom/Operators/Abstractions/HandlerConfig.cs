@@ -14,7 +14,7 @@ public static class HandlerConfig
 }
 
 public readonly record struct HandlerConfig<T>(
-    ImmutableList<Action<T>> Actions
+    ImmutableList<Action<T>>? Actions
 )
     where T : OperatorHandler
 {
@@ -28,28 +28,39 @@ public readonly record struct HandlerConfig<T>(
     
     public HandlerConfig<T> Then(HandlerConfig<T> next)
     {
-        return next.Actions.IsEmpty ? this : new HandlerConfig<T>(this.Actions.AddRange(next.Actions));
+        if (next.Actions is null || next.Actions.IsEmpty)
+        {
+            return this;
+        }
+        
+        return new HandlerConfig<T>(this.Actions?.AddRange(next.Actions) ?? []);
     }
     
     public HandlerConfig<T> Then(Action<T>? next)
     {
-        return next is null ? this : new HandlerConfig<T>(this.Actions.Add(next));
+        return next is null ? this : new HandlerConfig<T>(this.Actions?.Add(next) ?? []);
     }
 
     public HandlerConfig<T> Prepend(HandlerConfig<T> previous)
     {
-        return previous.Actions.IsEmpty
-            ? this
-            : this.Actions.IsEmpty ? previous : new HandlerConfig<T>(previous.Actions.AddRange(this.Actions));
+        if (previous.Actions is null || previous.Actions.IsEmpty)
+        {
+            return this;
+        }
+        
+        return new HandlerConfig<T>(previous.Actions.AddRange(this.Actions ?? []));
     }
     
     public HandlerConfig<T> Prepend(Action<T>? previous)
     {
-        return previous is null ? this : new HandlerConfig<T>(this.Actions.Insert(0, previous));
+        return previous is null ? this : new HandlerConfig<T>(this.Actions?.Insert(0, previous) ?? []);
     }
 
     public void Apply(T handler)
     {
+        if (this.Actions is null)
+            return;
+        
         foreach (var action in this.Actions)
         {
             action(handler);

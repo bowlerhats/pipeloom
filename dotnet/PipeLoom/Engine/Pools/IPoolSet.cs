@@ -11,15 +11,10 @@ public interface IPoolSet
 
 internal abstract class PoolSet : IPoolSet, IDisposable
 {
-    private readonly Action<IPoolSet>? _returnAction;
-
     private bool _disposed;
 
-    protected PoolSet(Action<IPoolSet>? returnAction)
-    {
-        _returnAction = returnAction;
-    }
-
+    public abstract void ReleaseAllTouched();
+    
     public abstract ArrayPool<T> GetArrayPool<T>();
     public abstract IObjectPool<T> GetObjectPool<T>(int maxSize) where T : class, new();
     public abstract IObjectPool<T> GetObjectPool<T>(Func<IObjectPool<T>, T> factory,int maxSize);
@@ -36,19 +31,7 @@ internal abstract class PoolSet : IPoolSet, IDisposable
         this.Dispose(true);
         GC.SuppressFinalize(this);
     }
-
-    public void Return()
-    {
-        if (_returnAction is null)
-        {
-            this.Dispose();
-        }
-        else
-        {
-            _returnAction(this);
-        }
-    }
-
+    
     protected void CheckDisposed()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);

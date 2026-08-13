@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using PipeLoom.Engine;
 using PipeLoom.Engine.Abstractions;
+using PipeLoom.Engine.Abstractions.Errors;
 
 namespace PipeLoom.Operators.Abstractions;
 
@@ -59,15 +59,19 @@ public sealed class HandlerSignature: IEquatable<HandlerSignature>
             || this.IsVariadic != other.IsVariadic
             || this.ArgumentTypes.Count != other.ArgumentTypes.Count)
         {
+            // has different shape
             return false;
         }
-
-        if (!other.ReturnType.IsAssignableTo(this.ReturnType))
+        
+        if (other.ReturnType.Id != this.ReturnType.Id && !other.ReturnType.IsConvertibleTo(this.ReturnType))
             return false;
 
         for (var i = 0; i < this.ArgumentTypes.Count; i++)
         {
-            if (!this.ArgumentTypes[i].IsAssignableTo(other.ArgumentTypes[i]))
+            var myArg = this.ArgumentTypes[i];
+            var otherArg = other.ArgumentTypes[i];
+            
+            if (myArg.Id != otherArg.Id && otherArg.IsConvertibleTo(myArg))
                 return false;
         }
 
@@ -212,8 +216,10 @@ public sealed class HandlerSignature: IEquatable<HandlerSignature>
     public static HandlerSignature From(PlTypeDef returnType, IEnumerable<PlTypeDef> args)
     {
         var engine = returnType.Engine;
+
+        var argList = args.ToList();
         
-        var arity = engine.GuessArity(args) ?? PlOperatorArity.Variadic;
+        var arity = engine.GuessArity(argList) ?? throw new PipeLoomException("Couldn't guess arity?!");
         var isVariadic = arity == PlOperatorArity.Variadic;
 
         return new HandlerSignature
@@ -221,7 +227,7 @@ public sealed class HandlerSignature: IEquatable<HandlerSignature>
             Engine = engine,
             Arity = arity,
             ReturnType = returnType,
-            ArgumentTypes = isVariadic ? [engine.CommonBaseOf(args)] : args.ToList(),
+            ArgumentTypes = isVariadic ? [engine.CommonBaseOf(argList)] : argList,
             IsVariadic = isVariadic
         };
     }

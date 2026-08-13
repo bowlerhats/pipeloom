@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers;
 using PipeLoom.Engine.Abstractions;
+using PipeLoom.Engine.TypeConversions;
 
 namespace PipeLoom.Engine;
 
@@ -11,7 +12,7 @@ internal readonly struct VariantRecaster<T> : IDisposable
     private readonly T[] _rented;
     private readonly ArrayPool<T>? _pool;
         
-    public VariantRecaster(ArrayPool<T> pool, Converter<Variant, T> converter, scoped in ReadOnlySpan<Variant> inputs)
+    public VariantRecaster(ArrayPool<T> pool, VariantUnpacker<T> unpacker, scoped in ReadOnlySpan<Variant> inputs)
     {
         var inputLength = inputs.Length;
         if (inputLength <= 0)
@@ -27,7 +28,7 @@ internal readonly struct VariantRecaster<T> : IDisposable
 
         for (var i = 0; i < inputLength; i++)
         {
-            _rented[i] = converter(inputs[i]);
+            _rented[i] = unpacker(in inputs[i]);
         }
 
         Memory = _rented.AsMemory(0, inputLength);

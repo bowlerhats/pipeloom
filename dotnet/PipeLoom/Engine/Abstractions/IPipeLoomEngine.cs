@@ -1,10 +1,10 @@
-﻿using System.Buffers;
+﻿using System;
 using System.Collections.Generic;
 using JetBrains.Annotations;
 
 namespace PipeLoom.Engine.Abstractions;
 
-public interface IPipeLoomEngine
+public interface IPipeLoomEngine : IDisposable
 {
     IPlConversionMap Conversions { get; }
     
@@ -12,11 +12,16 @@ public interface IPipeLoomEngine
     
     PlTypeDef TypeOf<T>();
 
+    PlGenericType? FindGeneric(Type nativeOpenGenericType);
+
     PlTypeDef CommonBaseOf(IEnumerable<PlTypeDef> types);
 
     PlOperatorArity? GuessArity([NoEnumeration] IEnumerable<PlTypeDef> args);
 
     PlOperatorClass GetOperatorClass(string operatorName);
-    
-    
+
+    Variant ToVariant<T>(in T value);
+    T FromVariant<T>(in Variant value);
+
+    internal int NextTypeId();
 }

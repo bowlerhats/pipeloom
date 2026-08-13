@@ -9,6 +9,7 @@ public abstract class PlGenericType : PlTypeDef
 {
     public sealed override Type NativeType { get; }
     public sealed override PlTypeCardinality Cardinality => PlTypeCardinality.Unknown;
+    public override bool IsFloating => true;
 
     protected PlGenericType(Type nativeOpenGeneric, IPipeLoomEngine engine)
         : base(engine)

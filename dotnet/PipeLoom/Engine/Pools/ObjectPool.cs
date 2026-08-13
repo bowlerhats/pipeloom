@@ -39,10 +39,15 @@ internal sealed class ObjectPool<T> : IObjectPool<T>
 
         _channel = Channel.CreateBounded<T>(new BoundedChannelOptions(maxSize)
         {
-            FullMode = BoundedChannelFullMode.DropWrite,
+            FullMode = BoundedChannelFullMode.Wait, // Forces TryWrite to return false when full
             SingleReader = false,
             SingleWriter = false
         });
+    }
+
+    ~ObjectPool()
+    {
+        this.Dispose();
     }
     
     public void Dispose()
@@ -53,6 +58,8 @@ internal sealed class ObjectPool<T> : IObjectPool<T>
         _channel.Writer.Complete();
         
         this.Clear(true);
+        
+        GC.SuppressFinalize(this);
     }
 
     public bool TryRentNoCreate([MaybeNullWhen(false)] out T rented)
@@ -114,6 +121,14 @@ internal sealed class ObjectPool<T> : IObjectPool<T>
         {
             if (_isDisposable)
                 _dispose(item);
+        }
+    }
+
+    public void ReleaseAll()
+    {
+        foreach (var (ticket, _) in _leasesByTicket)
+        {
+            this.Release(ticket);
         }
     }
 

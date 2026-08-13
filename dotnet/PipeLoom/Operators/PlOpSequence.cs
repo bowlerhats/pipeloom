@@ -12,7 +12,7 @@ namespace PipeLoom.Operators;
 public sealed class PlOpSequence : PlOperatorClass
 {
     public override bool IsClosed => true;
-
+    
     public PlOpSequence(IPipeLoomEngine engine)
         : base(engine, "sequence")
     {
@@ -39,6 +39,9 @@ public sealed class PlOpSequence : PlOperatorClass
     {
         var last = node.Arguments.LastOrDefault();
         node.IsVoid = last is null;
+        
+        if (node is { IsVoid: true, RequiredReturnType: PlVariant })
+            return base.PreFuse(node);
 
         if (node.RequiredReturnType is not null)
         {
@@ -51,13 +54,8 @@ public sealed class PlOpSequence : PlOperatorClass
         return base.PreFuse(node);
     }
 
-    public override OperatorHandler? ChooseHandler(WeaveNode node)
+    public override OperatorHandler ChooseHandler(WeaveNode node)
     {
-        if (!node.Arguments.Any() || node.Arguments.All(d => d.ReturnType.IsAssignableTo(this.Engine.WellKnown.Variant)))
-        {
-            return this.Handlers.Single();
-        }
-        
-        return null;
+        return this.Handlers.Single();
     }
 }

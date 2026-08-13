@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace PipeLoom.Types.Abstractions;
 
@@ -8,7 +9,7 @@ public interface IPlConstructed
     IReadOnlyList<PlTypeDef> GenericArguments { get; }
 }
 
-public interface IPlConstructed<TGeneric> : IPlConstructed
+public interface IPlConstructed<out TGeneric> : IPlConstructed
     where TGeneric: PlGenericType
 {
     new TGeneric GenericType { get; }
