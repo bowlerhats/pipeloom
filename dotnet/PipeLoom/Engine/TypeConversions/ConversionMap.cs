@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using PipeLoom.Engine.Abstractions;
 using PipeLoom.Engine.Abstractions.Errors;
 
@@ -126,9 +127,11 @@ internal sealed class ConversionMap : IPlConversionMap
 
     public Variant Convert(scoped in Variant value, PlTypeDef target)
     {
-        return this.TryConvert(in value, target, out var converted)
-            ? converted
-            : throw new PipeLoomException($"Failed to convert value to '{target.Name}' from '{value.ToString()}'");
+        // ReSharper disable once ConvertIfStatementToReturnStatement
+        if (!this.TryConvert(in value, target, out var converted))
+            throw new PipeLoomException($"Failed to convert value to '{target.Name}' from '{value.ToString()}'");
+
+        return converted;
     }
 
     public bool TryConvert(scoped in Variant value, PlTypeDef target, out Variant converted)
@@ -146,6 +149,9 @@ internal sealed class ConversionMap : IPlConversionMap
 
         if (source is null)
             return false; // Unknown captured value -> unsafe to attempt conversion
+
+        if (source.Id == target.Id)
+            return true; // identity, nothing to convert
 
         var key = PlTypeDef.CombineIds(source, target);
 
@@ -185,6 +191,8 @@ internal sealed class ConversionMap : IPlConversionMap
         // TODO: Find and build conversion chains
         
         converter = this.FindDirectConverter(source, target);
+
+        converter ??= this.GetOrCreateOrDefaultGenericConverter(source, target);
         
         return converter is not null;
     }
@@ -196,5 +204,35 @@ internal sealed class ConversionMap : IPlConversionMap
             return null;
 
         return candidates[^1];
+    }
+
+    private PlConverter? GetOrCreateOrDefaultGenericConverter(PlTypeDef source, PlTypeDef target)
+    {
+        if (source is not IPlConstructed gSource || target is not IPlConstructed gTarget)
+            return null;
+
+        if (gSource.GenericType != gTarget.GenericType
+            || gSource.GenericArguments.Count != gTarget.GenericArguments.Count || gSource.GenericArguments.Count != 1)
+            return null;
+
+        if (!gSource.GenericType.IsSupportingGenericConversions)
+            return null;
+        
+        if (!this.IsConvertible(gSource.GenericArguments[0], gTarget.GenericArguments[0]))
+            return null;
+        
+        var key = PlTypeDef.CombineIds(gSource.GenericArguments[0], gTarget.GenericArguments[0]);
+        if (!_cached.TryGetValue(key, out var converter))
+            return null;
+
+        var reg = new ConverterRegistrator(_engine);
+        
+        gSource.GenericType.MakeGenericConverter(source, target, converter, reg);
+        
+        key = PlTypeDef.CombineIds(source, target);
+        if (!_converters.TryGetValue(key, out var converters))
+            return null;
+
+        return converters.LastOrDefault();
     }
 }

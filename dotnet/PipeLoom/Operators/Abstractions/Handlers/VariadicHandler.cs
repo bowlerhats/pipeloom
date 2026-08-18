@@ -13,6 +13,9 @@ public sealed class VariadicHandler : OperatorHandler<VariadicHandler>
     
     public VariadicHandler ChangeSignature<TVariadic, TReturn>()
     {
+        this.Engine.Touch<TVariadic>();
+        this.Engine.Touch<TReturn>();
+        
         this.Signature = HandlerSignature.Variadic<TVariadic, TReturn>(this.Engine);
         this.IsHomogenic = true;
         
@@ -21,6 +24,10 @@ public sealed class VariadicHandler : OperatorHandler<VariadicHandler>
     
     public VariadicHandler ChangeSignature<TImplicit, TVariadic, TReturn>()
     {
+        this.Engine.Touch<TImplicit>();
+        this.Engine.Touch<TVariadic>();
+        this.Engine.Touch<TReturn>();
+        
         this.Signature = HandlerSignature.Variadic<TImplicit, TVariadic, TReturn>(this.Engine);
         this.IsHomogenic = false;
         

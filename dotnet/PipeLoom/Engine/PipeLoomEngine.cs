@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -52,6 +54,8 @@ public class PipeLoomEngine : IPipeLoomEngine
         _typeMap.Compact();
         
         _conversionMap.Add(config.GlobalConverterRegistrations);
+
+        this.ForceRunTypeInitializers();
     }
     
     protected virtual void Dispose(bool disposing)
@@ -253,5 +257,34 @@ public class PipeLoomEngine : IPipeLoomEngine
         return this.Execute<IBundle<Variant>>(plan);
     }
 
+    public void Touch<T>()
+    {
+        DoubleDispatch<T>.Register();
+    }
     
+    [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = "Defs landed in TypeDefs are not trimmed")]
+    [UnconditionalSuppressMessage("Trimming", "IL2059", Justification = "Types which have TypeInitializers guaranteed to have static ctor")]
+    private void ForceRunTypeInitializers()
+    {
+        foreach (var def in _typeMap.TypeDefs)
+        {
+            if (def.IsFloating || def.IsOpenGeneric || def.NativeType == null!)
+                continue;
+
+            if (!def.NativeType.IsAssignableTo(typeof(IForcedStaticalyInitialized)))
+                continue;
+            
+#pragma warning disable IL2075
+#pragma warning disable IL2059
+            if (def.NativeType.TypeInitializer is not null)
+            {
+                // No AOT concern, because this is just a defensive check,
+                // If the type was trimmed there is no way to show up in TypeDefs.
+                // If the static ctor was trimmed the 'TypeInitializer' is null
+                RuntimeHelpers.RunClassConstructor(def.NativeType.TypeHandle);
+            }
+#pragma warning restore IL2059
+#pragma warning restore IL2075
+        }
+    }
 }

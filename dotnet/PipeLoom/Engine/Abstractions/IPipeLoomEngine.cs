@@ -23,5 +23,7 @@ public interface IPipeLoomEngine : IDisposable
     Variant ToVariant<T>(in T value);
     T FromVariant<T>(in Variant value);
 
+    void Touch<T>();
+
     internal int NextTypeId();
 }

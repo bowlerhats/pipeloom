@@ -33,12 +33,12 @@ public readonly record struct HandlerConfig<T>(
             return this;
         }
         
-        return new HandlerConfig<T>(this.Actions?.AddRange(next.Actions) ?? []);
+        return new HandlerConfig<T>(this.Actions?.AddRange(next.Actions) ?? next.Actions);
     }
     
     public HandlerConfig<T> Then(Action<T>? next)
     {
-        return next is null ? this : new HandlerConfig<T>(this.Actions?.Add(next) ?? []);
+        return next is null ? this : new HandlerConfig<T>(this.Actions?.Add(next) ?? [ next ]);
     }
 
     public HandlerConfig<T> Prepend(HandlerConfig<T> previous)
@@ -53,7 +53,7 @@ public readonly record struct HandlerConfig<T>(
     
     public HandlerConfig<T> Prepend(Action<T>? previous)
     {
-        return previous is null ? this : new HandlerConfig<T>(this.Actions?.Insert(0, previous) ?? []);
+        return previous is null ? this : new HandlerConfig<T>(this.Actions?.Insert(0, previous) ?? [ previous ]);
     }
 
     public void Apply(T handler)

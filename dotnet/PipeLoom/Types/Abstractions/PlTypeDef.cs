@@ -2,7 +2,6 @@
 using System.Linq;
 using System.Runtime.CompilerServices;
 using PipeLoom.Engine.Abstractions;
-using PipeLoom.Engine.Abstractions.Errors;
 
 namespace PipeLoom.Types.Abstractions;
 
@@ -57,10 +56,10 @@ public abstract class PlTypeDef
 
     protected internal virtual void SetupConverters(scoped in ConverterRegistrator convertible)
     {
-        this.SetupConverters(convertible.From(this));
+        this.SetupMyConverters(convertible.From(this));
     }
 
-    protected virtual void SetupConverters(scoped in FromDefConverter fromMyself)
+    protected virtual void SetupMyConverters(scoped in FromDefConverter fromMyself)
     {
     }
 

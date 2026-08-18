@@ -71,7 +71,7 @@ public sealed class HandlerSignature: IEquatable<HandlerSignature>
             var myArg = this.ArgumentTypes[i];
             var otherArg = other.ArgumentTypes[i];
             
-            if (myArg.Id != otherArg.Id && otherArg.IsConvertibleTo(myArg))
+            if (myArg.Id != otherArg.Id && !myArg.IsConvertibleTo(otherArg))
                 return false;
         }
 

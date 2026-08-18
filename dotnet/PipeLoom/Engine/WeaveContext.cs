@@ -182,12 +182,12 @@ internal sealed class WeaveContext : IWeaveContext, IDisposable
         if (handler is null)
             throw new PipeLoomException($"Missing operator handler for '{node.OperatorName}'");
         
-        var childrenCoount = node.Children.Count;
+        var childrenCount = node.Children.Count;
         
         using var stateLease = _statePool.Lease();
         var state = stateLease.Item;
 
-        var argBuffer = _variantPool.Rent(childrenCoount);
+        var argBuffer = _variantPool.Rent(childrenCount);
         try
         {
             state.Bind(this, node, parentState);
@@ -199,7 +199,7 @@ internal sealed class WeaveContext : IWeaveContext, IDisposable
                 argBuffer[argPos++] = @implicit.Value;
             }
             
-            for (var i = 0; i < childrenCoount; i++)
+            for (var i = 0; i < childrenCount; i++)
             {
                 var child = node.Children[i];
                 if (!child.IsEnabled || child.IsFuseOnly)
@@ -213,7 +213,9 @@ internal sealed class WeaveContext : IWeaveContext, IDisposable
                 {
                     Variant childOutput;
                         
-                    var argType = handler.Signature.ArgumentTypes[argPos];
+                    var argType = handler.Signature.IsVariadic
+                        ? handler.Signature.ArgumentTypes[@implicit.HasValue ? 1 : 0]
+                        : handler.Signature.ArgumentTypes[argPos];
                     
                     if (argType is IPlCustomInputArgProvider argProvider
                         && argProvider.TryProvide(state, i, out var provided))
@@ -225,12 +227,14 @@ internal sealed class WeaveContext : IWeaveContext, IDisposable
                         childOutput = await this.StepAnalyzed(child, state);
                     }
                     
-                    argBuffer[argPos++] = childOutput;
+                    argBuffer[argPos++] = this.Engine.ConvertValue(in childOutput, argType);
                 }
             }
 
             ReadOnlyMemory<Variant> arguments = argPos > 0 ? argBuffer.AsMemory(0, argPos) : Memory<Variant>.Empty;
-            return await handler.Adapter.Call(state, in arguments);
+            var result = await handler.Adapter.Call(state, in arguments);
+            
+            return this.Engine.ConvertValue(result, handler.Signature.ReturnType);
         }
         finally
         {
@@ -319,7 +323,8 @@ internal sealed class WeaveContext : IWeaveContext, IDisposable
             mapped[i] = await this.Step(node, parentState, many[i]);
         }
 
-        return Many<Variant>.Wrap(mapped).ToVariant();
+        //return Many<Variant>.Wrap(mapped).ToVariant();
+        throw new NotImplementedException();
     }
 
     private ValueTask<Variant> ExpandBundle(WeaveNode node, StepState parentState, IReadOnlyBundle bundle)

@@ -12,6 +12,9 @@ public sealed class UnaryHandler: OperatorHandler<UnaryHandler>
 
     public UnaryHandler ChangeSignature<T1, TReturn>()
     {
+        this.Engine.Touch<T1>();
+        this.Engine.Touch<TReturn>();
+        
         this.Signature = HandlerSignature.Unary<T1, TReturn>(this.Engine);
         
         return this;

@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PipeLoom.Analyzers", "PipeL
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PipeLoom.Sandbox", "PipeLoom.Sandbox\PipeLoom.Sandbox.csproj", "{B4DD5EF3-4CD7-4A64-97BB-2F85B73297BD}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benchmarks", "Benchmarks\Benchmarks.csproj", "{8D1D8A2C-E8D6-4D26-A94B-B2DA17AC136D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -31,5 +33,9 @@ Global
 		{B4DD5EF3-4CD7-4A64-97BB-2F85B73297BD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B4DD5EF3-4CD7-4A64-97BB-2F85B73297BD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B4DD5EF3-4CD7-4A64-97BB-2F85B73297BD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8D1D8A2C-E8D6-4D26-A94B-B2DA17AC136D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8D1D8A2C-E8D6-4D26-A94B-B2DA17AC136D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8D1D8A2C-E8D6-4D26-A94B-B2DA17AC136D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8D1D8A2C-E8D6-4D26-A94B-B2DA17AC136D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

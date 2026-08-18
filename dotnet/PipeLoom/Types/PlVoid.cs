@@ -11,10 +11,10 @@ public sealed class PlVoid : PlVariant
     {
     }
 
-    protected override void SetupConverters(scoped in FromDefConverter fromMyself)
+    protected override void SetupMyConverters(scoped in FromDefConverter fromMyself)
     {
-        base.SetupConverters(in fromMyself);
+        base.SetupMyConverters(in fromMyself);
 
-        fromMyself.To<Variant>().Using((in _) => Variant.Undefined);
+        fromMyself.To<Variant>().Using(static (in _) => Variant.Undefined);
     }
 }

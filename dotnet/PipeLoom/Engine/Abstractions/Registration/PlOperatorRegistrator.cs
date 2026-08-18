@@ -74,6 +74,7 @@ public abstract class PlOperatorRegistrator
     public UnaryRegistrator<T> AsUnary<T>(Action<UnaryHandler> config) => this.AsUnary<T>(HandlerConfig.From(config));
     public virtual UnaryRegistrator<T> AsUnary<T>(HandlerConfig<UnaryHandler> config = default)
     {
+        this.Engine.Touch<T>();
         return new UnaryRegistrator<T>(this, config);
     }
     
@@ -121,12 +122,16 @@ public abstract class PlOperatorRegistrator
     public BinaryRegistrator<T1, T2> AsBinary<T1, T2>(Action<BinaryHandler> config) => this.AsBinary<T1, T2>(HandlerConfig.From(config));
     public virtual BinaryRegistrator<T1, T2> AsBinary<T1, T2>(HandlerConfig<BinaryHandler> config = default)
     {
+        this.Engine.Touch<T1>();
+        this.Engine.Touch<T2>();
+        
         return new BinaryRegistrator<T1, T2>(this, config);
     }
 
     public BinaryRegistrator<TSymmetric, TSymmetric> AsBinary<TSymmetric>(Action<BinaryHandler> config) => this.AsBinary<TSymmetric>(HandlerConfig.From(config));
     public virtual BinaryRegistrator<TSymmetric, TSymmetric> AsBinary<TSymmetric>(HandlerConfig<BinaryHandler> config = default)
     {
+        this.Engine.Touch<TSymmetric>();
         return new BinaryRegistrator<TSymmetric, TSymmetric>(this, config);
     }
     
@@ -174,6 +179,10 @@ public abstract class PlOperatorRegistrator
     public TernaryRegistrator<T1, T2, T3> AsTernary<T1, T2, T3>(Action<TernaryHandler> config) => this.AsTernary<T1, T2, T3>(HandlerConfig.From(config));
     public virtual TernaryRegistrator<T1, T2, T3> AsTernary<T1, T2, T3>(HandlerConfig<TernaryHandler> config = default)
     {
+        this.Engine.Touch<T1>();
+        this.Engine.Touch<T2>();
+        this.Engine.Touch<T3>();
+        
         return new TernaryRegistrator<T1, T2, T3>(this, config);
     }
     
@@ -221,12 +230,17 @@ public abstract class PlOperatorRegistrator
     public ImplicitVariadicRegistrator<TImplicit, TVariadic> AsVariadic<TImplicit, TVariadic>(Action<VariadicHandler> config) => this.AsVariadic<TImplicit, TVariadic>(HandlerConfig.From(config));
     public virtual ImplicitVariadicRegistrator<TImplicit, TVariadic> AsVariadic<TImplicit, TVariadic>(HandlerConfig<VariadicHandler> config = default)
     {
+        this.Engine.Touch<TImplicit>();
+        this.Engine.Touch<TVariadic>();
+        
         return new ImplicitVariadicRegistrator<TImplicit, TVariadic>(this, config);
     }
     
     public VariadicRegistrator<T> AsVariadic<T>(Action<VariadicHandler> config) => this.AsVariadic<T>(HandlerConfig.From(config));
     public virtual VariadicRegistrator<T> AsVariadic<T>(HandlerConfig<VariadicHandler> config = default)
     {
+        this.Engine.Touch<T>();
+        
         return new VariadicRegistrator<T>(this, config);
     }
     

@@ -55,7 +55,7 @@ public sealed class PlDetached : PlTypeDef, IPlConstructed<PlGenericDetached>, I
 
     public bool TryProvide(IStepState state, int childIndex, out Variant providedInputArg)
     {
-        providedInputArg = Variant.From(new Detached<Variant>((StepState)state, childIndex));
+        providedInputArg = Variant.From(new Detached<Variant>((StepState)state, childIndex), state.Context.Engine);
         return true;
     }
 }

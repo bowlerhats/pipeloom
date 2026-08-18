@@ -12,6 +12,8 @@ public sealed class NullaryHandler : OperatorHandler<NullaryHandler>
 
     public NullaryHandler ChangeSignature<TReturn>()
     {
+        this.Engine.Touch<TReturn>();
+        
         this.Signature = HandlerSignature.Nullary<TReturn>(this.Engine);
         
         return this;

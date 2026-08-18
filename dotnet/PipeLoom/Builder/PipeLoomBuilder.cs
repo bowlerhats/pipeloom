@@ -46,6 +46,7 @@ public abstract class PipeLoomBuilder<TSelf> : IEngineConfig
         
         this.AddType(engine => new PlGenericDetached(engine));
         this.AddType(engine => new PlGenericScalar(engine));
+        this.AddType(engine => new PlGenericMany(engine));
 
         this.AddType(engine => new PlText(engine));
         this.AddType(engine => new PlBool(engine));
@@ -71,10 +72,12 @@ public abstract class PipeLoomBuilder<TSelf> : IEngineConfig
         this.AddOperatorClass(d => new PlOpLog(d));
         
         this.AddOperatorClass(d => new PlOpSequence(d));
-        //this.AddOperatorClass(d => new PlOpPipe(d));
+        // this.AddOperatorClass(d => new PlOpPipe(d));
         
         this.AddOperatorClass(d => new PlOpIsNull(d));
         this.AddOperatorClass(d => new PlOpIsNotNull(d));
+        
+        this.AddOperatorClass(d => new PlSum(d));
         
         return this.Self;
     }
