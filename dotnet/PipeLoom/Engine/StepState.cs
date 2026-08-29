@@ -37,18 +37,13 @@ internal sealed class StepState : IStepState
         _context = null;
     }
     
-    public IBundle<T> NewBundle<T>()
+    public ValueTask<T> Step<T>(Detached<T> detached)
     {
-        return this.Context.NewBundle<T>();
+        return this.Context.StepDetached(detached, Variant.Undefined, this);
     }
 
-    public ValueTask<T> Step<T>(scoped in Detached<T> detached)
+    public ValueTask<T> Step<T, TCarry>(Detached<T> detached, TCarry carry)
     {
-        throw new System.NotImplementedException();
-    }
-
-    public ValueTask<T> Step<T, TCarry>(scoped in Detached<T> detached, TCarry carry)
-    {
-        throw new System.NotImplementedException();
+        return this.Context.StepDetached(detached, carry, this);
     }
 }

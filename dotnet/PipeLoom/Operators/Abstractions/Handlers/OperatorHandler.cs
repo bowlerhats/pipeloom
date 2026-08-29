@@ -18,6 +18,9 @@ public abstract class OperatorHandler
     public HandlerRole Role { get; set; } = HandlerRole.None;
     
     public MethodAdapter Adapter { get; }
+
+    public bool HasImplicit
+        => this.Role != HandlerRole.None || this.Signature is { IsVariadic: true, IsHomogenic: false }; 
     
     protected Func<WeaveNode, PlTypeDef, PlTypeDef>? Narrower { get; set; }
     
@@ -62,6 +65,13 @@ public abstract class OperatorHandler
         }
         
         return this.Signature.ReturnType;
+    }
+
+    public override string ToString()
+    {
+        return this.Signature != null!
+            ? $"{this.OperatorClass.Name} {this.Signature}"
+            : $"{this.OperatorClass.Name} (???): ???";
     }
 }
 

@@ -1,18 +1,23 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using PipeLoom.Engine;
 using PipeLoom.Engine.Abstractions;
 using PipeLoom.Engine.Abstractions.Errors;
+using PipeLoom.Engine.TypeConversions;
 
 namespace PipeLoom.Types.Abstractions;
 
-public abstract class PlGenericType : PlTypeDef, IDoubleDispatchCallback
+public abstract class PlGenericType : PlTypeDef, IDoubleDispatchCallback<PlConverter>
 {
     public sealed override Type NativeType { get; }
     public sealed override PlTypeCardinality Cardinality => PlTypeCardinality.Unknown;
     public override bool IsFloating => true;
     
-    public virtual bool IsSupportingGenericConversions => false;
+    public virtual bool SupportsHomomorphicConversion => false;
+
+    private readonly ConcurrentDictionary<PlTypeDef, IPlConstructed> _constructedSingleArg = [];
 
     protected PlGenericType(Type nativeOpenGeneric, IPipeLoomEngine engine)
         : base(engine)
@@ -25,33 +30,64 @@ public abstract class PlGenericType : PlTypeDef, IDoubleDispatchCallback
         }
     }
 
-    public abstract PlTypeDef Construct(Type concreteType, IReadOnlyList<PlTypeDef> arguments);
+    protected abstract PlTypeDef Construct(Type concreteType, IReadOnlyList<PlTypeDef> arguments);
 
-    public void MakeGenericConverter(PlTypeDef source, PlTypeDef target, IPlConverter innerConverter, ConverterRegistrator convertible)
+    internal PlTypeDef ConstructGeneric(Type concreteType, IReadOnlyList<PlTypeDef> arguments)
     {
-        if (source is not IPlConstructed cSource || target is not IPlConstructed cTarget)
-            return;
+        if (arguments.Count != 1)
+            throw new NotSupportedException("Multiarg generics are not supported");
 
-        var sArg = cSource.GenericArguments.Single();
-        var tArg = cTarget.GenericArguments.Single();
+        if (_constructedSingleArg.TryGetValue(arguments.Single(), out var existing))
+            return (PlTypeDef)existing;
+        
+        var def = this.Construct(concreteType, arguments);
+        var gDef = (IPlConstructed)def;
 
+        if (!_constructedSingleArg.TryAdd(gDef.GenericArguments[0], gDef))
+            throw new PipeLoomException("Inconsistent generic construction");
+        
+        return def;
+    }
+    
+    internal PlConverter MakeGenericConverter(PlTypeDef sourceArgType, PlTypeDef targetArgType, IPlConverter innerConverter, ConverterRegistrator convertible)
+    {
         var p = new ConverterBuilderParams
         {
             InnerConverter = innerConverter,
             Convertible = convertible
         };
         
-        IDoubleDispatched.Dispatch(sArg.NativeType, tArg.NativeType, this, p);
+        return IDoubleDispatched.Dispatch(sourceArgType.NativeType, targetArgType.NativeType, this, p);
     }
 
-    void IDoubleDispatchCallback.Dispatch<T, U>(object? state)
+    internal IPlConstructed? FindConstructedOfInner(PlTypeDef innerType)
+    {
+        return _constructedSingleArg.GetValueOrDefault(innerType);
+    }
+    
+    internal IPlConstructed? FindOrCreateConstructedOfInner(PlTypeDef innerType)
+    {
+        var res = _constructedSingleArg.GetValueOrDefault(innerType);
+        if (res is not null)
+            return res;
+        
+        var constructable = Discovery.FindGeneric(this.NativeType, innerType.NativeType);
+        if (constructable is not null)
+        {
+            res = (IPlConstructed)this.Engine.TypeMap.ConstructGeneric(constructable.NativeType, this);
+        }
+
+        return res;
+    }
+
+    PlConverter IDoubleDispatchCallback<PlConverter>.Dispatch<T, U>(object? state)
     {
         ArgumentNullException.ThrowIfNull(state);
         
-        this.BuildGenericConverter<T, U>((ConverterBuilderParams)state);
+        return (PlConverter)this.BuildHomomorphicConverter<T, U>((ConverterBuilderParams)state);
     }
 
-    public virtual void BuildGenericConverter<TSourceInner, TTargetInner>(ConverterBuilderParams builderParams)
+    public virtual IPlConverter BuildHomomorphicConverter<TSourceInner, TTargetInner>(ConverterBuilderParams builderParams)
     {
         throw new NotSupportedException($"{this.Name} does not support generic conversions");
     }

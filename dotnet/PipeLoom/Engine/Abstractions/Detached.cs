@@ -12,47 +12,56 @@ namespace PipeLoom.Engine.Abstractions;
 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllConstructors)]
 public readonly struct Detached<TResult> : IEquatable<Detached<TResult>>, IVariantDecomposable<Detached<TResult>>
 {
-    private readonly StepState _state;
-    private readonly int _childIndex;
-    
-    public IWeaveNode Node => _state.Node.Children[_childIndex];
-    
-    internal Detached(StepState state, int childIndex)
+    // private readonly StepState _state;
+    // private readonly int _childIndex;
+
+    private readonly IWeaveNode _node;
+
+    public IWeaveNode Node => _node;// _state.Node.Children[_childIndex];
+
+    public Detached(IWeaveNode node)
     {
-        ArgumentNullException.ThrowIfNull(state);
-        ArgumentOutOfRangeException.ThrowIfNegative(childIndex);
-
-        if (state.Node.Children.Count <= childIndex)
-            throw new IndexOutOfRangeException("Child index exceeds Node's children bounds");
-
-        _state = state;
-        _childIndex = childIndex;
-    }
-
-    private Detached(int childIndex)
-    {
-        ArgumentOutOfRangeException.ThrowIfNegative(childIndex);
+        ArgumentNullException.ThrowIfNull(node);
         
-        _state = null!;
-        _childIndex = childIndex;
-    }
-
-    public ValueTask<TResult> Step()
-    {
-        return _state.Step(in this);
+        _node = node;
     }
     
-    public ValueTask<TResult> Step<TCarry>(TCarry carry)
-    {
-        return _state.Step(in this, carry);
-    }
+    // internal Detached(StepState state, int childIndex)
+    // {
+    //     ArgumentNullException.ThrowIfNull(state);
+    //     ArgumentOutOfRangeException.ThrowIfNegative(childIndex);
+    //
+    //     if (state.Node.Children.Count <= childIndex)
+    //         throw new IndexOutOfRangeException("Child index exceeds Node's children bounds");
+    //
+    //     _state = state;
+    //     _childIndex = childIndex;
+    // }
+    //
+    // private Detached(int childIndex)
+    // {
+    //     ArgumentOutOfRangeException.ThrowIfNegative(childIndex);
+    //     
+    //     _state = null!;
+    //     _childIndex = childIndex;
+    // }
+
+    // public ValueTask<TResult> Step()
+    // {
+    //     return _state.Step(this);
+    // }
+    //
+    // public ValueTask<TResult> Step<TCarry>(TCarry carry)
+    // {
+    //     return _state.Step(this, carry);
+    // }
     
 
     #region Equality
     
     public bool Equals(Detached<TResult> other)
     {
-        return Equals(_state, other._state) && _childIndex == other._childIndex;
+        return Equals(_node, other._node);
     }
 
     public override bool Equals(object? obj)
@@ -62,7 +71,7 @@ public readonly struct Detached<TResult> : IEquatable<Detached<TResult>>, IVaria
 
     public override int GetHashCode()
     {
-        return HashCode.Combine(_state, _childIndex);
+        return _node.GetHashCode();
     }
     
     public static bool operator ==(Detached<TResult> left, Detached<TResult> right)
@@ -87,17 +96,17 @@ public readonly struct Detached<TResult> : IEquatable<Detached<TResult>>, IVaria
     
     public (object? reference, Detached<TResult> bare) DecomposeForVariant()
     {
-        if (_state is null)
-            throw new PipeLoomException("Detached nodes need a proper state");
+        if (_node is null)
+            throw new PipeLoomException("Detached nodes need a proper node");
         
-        return (_state, new Detached<TResult>(_childIndex));
+        return (_node, default);
     }
 
-    public static Detached<TResult> ComposeFromPair(object? reference, Detached<TResult> bare)
+    public static Detached<TResult> ComposeFromPair(object? reference, Detached<TResult> _)
     {
         ArgumentNullException.ThrowIfNull(reference);
 
-        return new Detached<TResult>((StepState)reference, bare._childIndex);
+        return new Detached<TResult>((IWeaveNode)reference);
     }
 
     #endregion

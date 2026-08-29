@@ -4,6 +4,8 @@ namespace PipeLoom.Engine.Abstractions;
 
 public interface IWeaveNode
 {
+    bool IsArgument { get; }
+    
     WeavePlan Plan { get; }
     Variant ImplicitValue { get; }
     

@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using PipeLoom.Engine;
 using PipeLoom.Engine.Abstractions;
+using PipeLoom.Engine.Abstractions.Bundles;
 using PipeLoom.Engine.Abstractions.Errors;
 
 namespace PipeLoom.Types;
@@ -9,14 +11,14 @@ namespace PipeLoom.Types;
 public sealed class PlGenericMany : PlGenericType
 {
     public override string Name => "Many<>";
-    public override bool IsSupportingGenericConversions => true;
+    public override bool SupportsHomomorphicConversion => true;
 
     public PlGenericMany(IPipeLoomEngine engine)
         : base(typeof(Many<>), engine)
     {
     }
 
-    public override PlTypeDef Construct(Type concreteType, IReadOnlyList<PlTypeDef> arguments)
+    protected override PlTypeDef Construct(Type concreteType, IReadOnlyList<PlTypeDef> arguments)
     {
         var arg = arguments.Single();
         if (arg.IsFloating)
@@ -28,27 +30,49 @@ public sealed class PlGenericMany : PlGenericType
         return new PlManyOf(concreteType, this, arguments.Single(), this.Engine);
     }
 
-    public override void BuildGenericConverter<TSourceInner, TTargetInner>(ConverterBuilderParams builderParams)
+    public override IPlConverter BuildHomomorphicConverter<TSourceInner, TTargetInner>(ConverterBuilderParams builderParams)
     {
+        if (typeof(TTargetInner) == typeof(Variant))
+        {
+            return builderParams.Convertible
+                .FromValue<Many<TSourceInner>>()
+                .ToValue<Many<Variant>>()
+                .Using(static (context, in v) => v.ToVariantMany(context));
+        }
+        
         var innerConverter = builderParams.InnerConverter;
 
         var innerSourceType = this.Engine.TypeOf<TSourceInner>();
         
-        builderParams.Convertible
+        return builderParams.Convertible
             .FromValue<Many<TSourceInner>>()
             .ToValue<Many<TTargetInner>>()
-            .Using((in v) =>
+            .Using((context, in v) =>
             {
-                var newList = new List<TTargetInner>();
-                foreach (var input in v)
-                {
-                    var vInput = Variant.From(input, innerSourceType);
-                    var vOutput = innerConverter.Convert(in vInput);
-                    var output = vOutput.Unpack<TTargetInner>();
-                    newList.Add(output);
-                }
+                return v.ConvertTo(context, (context, innerConverter, innerSourceType), Convert);
 
-                return new Many<TTargetInner>(newList);
+                static TTargetInner Convert((IWeaveContext context, IPlConverter converter, PlTypeDef innerSourceType) state, TSourceInner input)
+                {
+                    var vInput = Variant.From(input, state.innerSourceType);
+                    var vOutput = state.converter.Convert(state.context, in vInput);
+                    return vOutput.Unpack<TTargetInner>();
+                }
+            });
+    }
+
+    protected internal override void SetupConverters(scoped in ConverterRegistrator convertible)
+    {
+        base.SetupConverters(in convertible);
+
+        convertible
+            .FromValue<Many<Variant>>()
+            .ToRef<IBundle<Variant>>()
+            .Using(static (context, in many) =>
+            {
+                var res = context.Bundles.Create<Variant>();
+                res.SetLeaf(PartitionPath.Default, many);
+                
+                return res;
             });
     }
 }
@@ -80,6 +104,7 @@ public sealed class PlManyOf : PlMany, IPlConstructed<PlGenericMany>
     public IReadOnlyList<PlTypeDef> GenericArguments { get; }
     
     public PlTypeDef InnerType { get; }
+    PlTypeDef IPlConstructed.SelfType => this;
     
     public PlManyOf(
         Type concreteType,

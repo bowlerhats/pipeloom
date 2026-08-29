@@ -12,6 +12,11 @@ internal sealed class StaticPoolSet : PoolSet
     
     private readonly ConcurrentDictionary<Type, object> _arrayPools = [];
     private readonly ConcurrentDictionary<Type, IObjectPool> _objectPools = [];
+
+    public StaticPoolSet(PipeLoomEngine engine)
+        : base(engine)
+    {
+    }
     
     protected override void Dispose(bool disposing)
     {
@@ -42,15 +47,18 @@ internal sealed class StaticPoolSet : PoolSet
     {
         this.CheckDisposed();
 
-        return (ArrayPool<T>)_arrayPools.GetOrAdd(typeof(T), static _ => ArrayPool<T>.Create());
+        return (ArrayPool<T>)_arrayPools.GetOrAdd(
+            typeof(T),
+            static _ => ArrayPool<T>.Create(MagicNumbers.MaxArrayPoolArrayLength, MagicNumbers.MaxArrayPoolBucketSize)
+        );
     }
 
     public override IObjectPool<T> GetObjectPool<T>(int maxSize)
     {
         return this.GetObjectPool<T>(static _ => new T(), maxSize);
     }
-    
-    public override IObjectPool<T> GetObjectPool<T>(Func<IObjectPool<T>, T> factory, int maxSize)
+
+    public override IObjectPool<T> GetObjectPool<T, TState>(TState state, Func<TState, IObjectPool<T>, T> factory, int maxSize)
     {
         this.CheckDisposed();
         
@@ -62,7 +70,7 @@ internal sealed class StaticPoolSet : PoolSet
             if (_objectPools.TryGetValue(typeof(T), out res))
                 return (IObjectPool<T>)res;
             
-            res = new ObjectPool<T>(factory, maxSize);
+            res = new ObjectPool<T>(pool => factory(state, pool), maxSize);
             
             if (_objectPools.TryAdd(typeof(T), res))
                 return (IObjectPool<T>)res;
@@ -71,5 +79,10 @@ internal sealed class StaticPoolSet : PoolSet
                 
             throw new PipeLoomException("Concurrency error while creating object pool");
         }
+    }
+    
+    public override IObjectPool<T> GetObjectPool<T>(Func<IObjectPool<T>, T> factory, int maxSize)
+    {
+        return this.GetObjectPool<T, Func<IObjectPool<T>, T>>(factory, static (f, pool) => f(pool), maxSize);
     }
 }

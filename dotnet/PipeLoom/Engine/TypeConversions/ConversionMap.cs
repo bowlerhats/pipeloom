@@ -104,6 +104,22 @@ internal sealed class ConversionMap : IPlConversionMap
         return null;
     }
 
+    public IPlConverter? FindConverter(PlTypeDef source, PlTypeDef target)
+    {
+        var key = PlTypeDef.CombineIds(source, target);
+        if (_cached.TryGetValue(key, out var cachedConverter))
+            return cachedConverter;
+
+        if (!this.IsConvertible(source, target))
+            return null;
+
+        if (!_converters.TryGetValue(key, out var candidates) || candidates.IsEmpty)
+            return null;
+        
+        _cached[key] = candidates.Last();
+        return candidates.Last();
+    }
+
     public bool IsConvertible(PlTypeDef from, PlTypeDef to)
     {
         if (from.Id == to.Id)
@@ -125,16 +141,32 @@ internal sealed class ConversionMap : IPlConversionMap
         return true;
     }
 
-    public Variant Convert(scoped in Variant value, PlTypeDef target)
+    public Variant Convert(IWeaveContext context, scoped in Variant value, PlTypeDef target)
     {
         // ReSharper disable once ConvertIfStatementToReturnStatement
-        if (!this.TryConvert(in value, target, out var converted))
+        if (!this.TryConvert(context, in value, target, out var converted))
             throw new PipeLoomException($"Failed to convert value to '{target.Name}' from '{value.ToString()}'");
 
         return converted;
     }
 
-    public bool TryConvert(scoped in Variant value, PlTypeDef target, out Variant converted)
+    public TTarget Convert<TSource, TTarget>(IWeaveContext context, TSource value)
+    {
+        if (!this.TryConvert<TSource, TTarget>(context, value, out var converted))
+            throw new PipeLoomException($"Failed to convert value to '{typeof(TTarget).Name}' from '{typeof(TSource).Name}'");
+
+        return converted;
+    }
+    
+    public TTarget Convert<TTarget>(IWeaveContext context, scoped in Variant value)
+    {
+        if (!this.TryConvert<TTarget>(context, value, out var converted))
+            throw new PipeLoomException($"Failed to convert value to '{typeof(TTarget).Name}' from '{value}'");
+
+        return converted;
+    }
+
+    public bool TryConvert(IWeaveContext context, scoped in Variant value, PlTypeDef target, out Variant converted)
     {
         converted = value;
 
@@ -163,16 +195,31 @@ internal sealed class ConversionMap : IPlConversionMap
             _cached[key] = converter;
         }
         
-        converted = converter.Convert(in value);
+        converted = converter.Convert(context, in value);
         
         return true;
     }
     
-    public bool TryConvert<TTarget>(scoped in Variant value, out TTarget converted)
+    public bool TryConvert<TTarget>(IWeaveContext context, scoped in Variant value, out TTarget converted)
     {
         converted = default!;
         
-        if (!this.TryConvert(in value, _engine.TypeOf<TTarget>(), out var vConverted))
+        if (!this.TryConvert(context, in value, _engine.TypeOf<TTarget>(), out var vConverted))
+        {
+            return false;
+        }
+        
+        converted = vConverted.Unpack<TTarget>();
+        return true;
+    }
+    
+    public bool TryConvert<TSource, TTarget>(IWeaveContext context, TSource value, out TTarget converted)
+    {
+        converted = default!;
+
+        var source = Variant.From(value, _engine.TypeOf<TSource>());
+        
+        if (!this.TryConvert(context, in source, _engine.TypeOf<TTarget>(), out var vConverted))
         {
             return false;
         }
@@ -191,8 +238,10 @@ internal sealed class ConversionMap : IPlConversionMap
         // TODO: Find and build conversion chains
         
         converter = this.FindDirectConverter(source, target);
-
-        converter ??= this.GetOrCreateOrDefaultGenericConverter(source, target);
+        
+        #pragma warning disable CS8601
+        converter ??= this.GetOrCreateCrossGenericConverter(source, target);
+        #pragma warning restore CS8601
         
         return converter is not null;
     }
@@ -206,33 +255,109 @@ internal sealed class ConversionMap : IPlConversionMap
         return candidates[^1];
     }
 
-    private PlConverter? GetOrCreateOrDefaultGenericConverter(PlTypeDef source, PlTypeDef target)
+    private PlConverter? GetOrCreateCrossGenericConverter(PlTypeDef source, PlTypeDef target)
     {
+        // both have to be generic
         if (source is not IPlConstructed gSource || target is not IPlConstructed gTarget)
             return null;
-
-        if (gSource.GenericType != gTarget.GenericType
-            || gSource.GenericArguments.Count != gTarget.GenericArguments.Count || gSource.GenericArguments.Count != 1)
-            return null;
-
-        if (!gSource.GenericType.IsSupportingGenericConversions)
+        
+        // both must have exactly a single generic arugment
+        if (gSource.GenericArguments.Count != 1 || gTarget.GenericArguments.Count != 1)
             return null;
         
-        if (!this.IsConvertible(gSource.GenericArguments[0], gTarget.GenericArguments[0]))
+        var key = PlTypeDef.CombineIds(source, target);
+        if (_converters.TryGetValue(key, out var converters) && !converters.IsEmpty)
+        {
+            return converters.Last();
+        }
+
+        if (gSource.GenericType == gTarget.GenericType)
+        {
+            return this.CreateHomomorphicConverter(
+                gSource.GenericType,
+                gSource.GenericArguments[0],
+                gTarget.GenericArguments[0]);
+        }
+
+        return this.CreateLiftedGenericConverter(gSource, gTarget);
+    }
+
+    private PlConverter? CreateHomomorphicConverter(
+        PlGenericType genericType,
+        PlTypeDef sourceArg,
+        PlTypeDef targetArg
+        )
+    {
+        if (!genericType.SupportsHomomorphicConversion)
+            return null;
+
+        if (!sourceArg.IsConvertibleTo(targetArg))
             return null;
         
-        var key = PlTypeDef.CombineIds(gSource.GenericArguments[0], gTarget.GenericArguments[0]);
-        if (!_cached.TryGetValue(key, out var converter))
+        var innerKey = PlTypeDef.CombineIds(sourceArg, targetArg);
+        if (!_cached.TryGetValue(innerKey, out var innerConverter))
             return null;
 
         var reg = new ConverterRegistrator(_engine);
         
-        gSource.GenericType.MakeGenericConverter(source, target, converter, reg);
-        
-        key = PlTypeDef.CombineIds(source, target);
-        if (!_converters.TryGetValue(key, out var converters))
+        return genericType.MakeGenericConverter(sourceArg, targetArg, innerConverter, reg);
+    }
+
+    private PlConverter? CreateLiftedGenericConverter(IPlConstructed gSource, IPlConstructed gTarget)
+    {
+        var vSource = gSource.GenericType.FindConstructedOfInner(_engine.WellKnown.Variant);
+        var vTarget = gTarget.GenericType.FindConstructedOfInner(_engine.WellKnown.Variant);
+
+        if (vSource is null || vTarget is null)
             return null;
 
-        return converters.LastOrDefault();
+        var vDirect = this.FindDirectConverter(vSource.SelfType, vTarget.SelfType);
+        if (vDirect is null)
+            return null;
+
+        var sourceArg = gSource.GenericArguments.Single();
+        if (sourceArg == _engine.WellKnown.Variant)
+            return null; // inner conversion of Variant -> T is invalid
+        
+        var targetArg = gTarget.GenericArguments.Single();
+        
+        if (sourceArg == _engine.WellKnown.Variant && targetArg == _engine.WellKnown.Variant)
+            return vDirect; // ?! this case shouldn't happen here, since direct converters have higher priority
+
+        if (targetArg == _engine.WellKnown.Variant)
+        {
+            // A<T> -> B<Variant>
+            // A<T> -> A<Variant> -> B<Variant>
+            
+            // T -> Variant is implicit, so this is lowered to the direct converter
+            return vDirect;
+        }
+        
+        // from here onward nor the source nor the target is Variant
+        
+        if (!sourceArg.IsConvertibleTo(targetArg))
+            return null;
+
+        var hSource = gSource.GenericType.FindConstructedOfInner(targetArg);
+        var hTarget = gTarget.GenericType.FindConstructedOfInner(sourceArg);
+
+        if (hSource is null && hTarget is null)
+        {
+            hSource = gSource.GenericType.FindOrCreateConstructedOfInner(targetArg);
+            hTarget = hSource is null ? gTarget.GenericType.FindOrCreateConstructedOfInner(sourceArg) : null;
+        }
+
+        var hSourceConverter = hSource is not null ? this.FindConverter(gSource.SelfType, hSource.SelfType) : null;
+        var hTargetConverter = hSourceConverter is null && hTarget is not null ? this.FindConverter(gTarget.SelfType, hTarget.SelfType) : null;
+
+        if (hSourceConverter is null && hTargetConverter is null)
+            return null; // at least one side needs an inner homomorphic converter, otherwise the conversion is nonsense
+
+        return new PlLiftedGenericConverter(gSource, gTarget, _engine)
+        {
+            VDirect = vDirect,
+            HSourceConverter = hSourceConverter,
+            HTargetConverter = hTargetConverter
+        };
     }
 }

@@ -2,11 +2,11 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using PipeLoom.Engine.Abstractions;
+using PipeLoom.Engine.Abstractions.Bundles;
 using PipeLoom.Engine.Abstractions.Errors;
 using PipeLoom.Engine.Pools;
 using PipeLoom.Engine.TypeConversions;
@@ -25,6 +25,8 @@ public class PipeLoomEngine : IPipeLoomEngine
 
     internal TypeMap TypeMap => _typeMap;
 
+    TypeMap IPipeLoomEngine.TypeMap => _typeMap;
+
     // This lock serializes engine-global type, operator and other metadata changes
     // It has to block execution for example if a Compact() is requested
     private readonly ReaderWriterLockSlim _engineLock = new(LockRecursionPolicy.NoRecursion);
@@ -38,8 +40,10 @@ public class PipeLoomEngine : IPipeLoomEngine
     internal PipeLoomEngine(IEngineConfig config)
     {
         this.PoolSets = new ObjectPool<MemCachedPoolSet>(
-            _ => new MemCachedPoolSet(),
+            _ => new MemCachedPoolSet(this),
             MagicNumbers.EnginePoolSetSize);
+        
+        this.PoolSets.Warmup(100);
         
         _conversionMap = new ConversionMap(this);
         
@@ -151,30 +155,6 @@ public class PipeLoomEngine : IPipeLoomEngine
         return _conversionMap.IsConvertible(from, to);
     }
     
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public Variant ConvertValue(scoped in Variant value, PlTypeDef target)
-    {
-        this.CheckDisposed();
-        
-        return _conversionMap.Convert(in value, target);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool TryConvert(scoped in Variant value, PlTypeDef target, out Variant converted)
-    {
-        this.CheckDisposed();
-        
-        return _conversionMap.TryConvert(in value, target, out converted);
-    }
-    
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool TryConvert<TTarget>(scoped in Variant value, out TTarget converted)
-    {
-        this.CheckDisposed();
-        
-        return _conversionMap.TryConvert(in value, out converted);
-    }
-
     public T GetType<T>()
         where T : PlTypeDef
     {
@@ -240,7 +220,7 @@ public class PipeLoomEngine : IPipeLoomEngine
 
             var result = await context.Step();
 
-            result = this.ConvertValue(in result, outputType);
+            result = this.Conversions.Convert(context, in result, outputType);
 
             return result.Unpack<TOutput>(reinterpret: true);
         }
@@ -259,6 +239,8 @@ public class PipeLoomEngine : IPipeLoomEngine
 
     public void Touch<T>()
     {
+        IPipeLoomEngine.Discover<T>();
+        
         DoubleDispatch<T>.Register();
     }
     

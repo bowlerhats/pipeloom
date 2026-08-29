@@ -5,17 +5,17 @@ using PipeLoom.Engine.Abstractions.Errors;
 
 namespace PipeLoom.Engine.Abstractions;
 
-public interface IDoubleDispatchCallback
+public interface IDoubleDispatchCallback<TResult>
 {
-    void Dispatch<T, U>(object? state);
+    TResult Dispatch<T, U>(object? state);
 }
 
 public interface IDoubleDispatched
 {
-    void Dispatch<U>(IDoubleDispatchCallback callback, object? state);
-    void Dispatch(IDoubleDispatched second, IDoubleDispatchCallback callback, object? state);
+    TResult Dispatch<U, TResult>(IDoubleDispatchCallback<TResult> callback, object? state);
+    TResult Dispatch<TResult>(IDoubleDispatched second, IDoubleDispatchCallback<TResult> callback, object? state);
 
-    static void Dispatch(Type first, Type second, IDoubleDispatchCallback callback, object? state = null)
+    static TResult Dispatch<TResult>(Type first, Type second, IDoubleDispatchCallback<TResult> callback, object? state = null)
     {
         ArgumentNullException.ThrowIfNull(first);
         ArgumentNullException.ThrowIfNull(second);
@@ -26,7 +26,7 @@ public interface IDoubleDispatched
         if (!DoubleDispatchRegistry.Dispatchers.TryGetValue(second, out var secondDispatched))
             throw new PipeLoomException($"Type not dispatchable: '{second.FullName}'");
         
-        secondDispatched.Dispatch(firstDispatched, callback, state);
+        return secondDispatched.Dispatch<TResult>(firstDispatched, callback, state);
     }
 }
 
@@ -37,14 +37,14 @@ internal static class DoubleDispatchRegistry
 
 public sealed class DoubleDispatch<T> : IDoubleDispatched
 {
-    public void Dispatch(IDoubleDispatched dispatched, IDoubleDispatchCallback callback, object? state)
+    public TResult Dispatch<TResult>(IDoubleDispatched dispatched, IDoubleDispatchCallback<TResult> callback, object? state)
     {
-        dispatched.Dispatch<T>(callback, state);
+        return dispatched.Dispatch<T, TResult>(callback, state);
     }
 
-    public void Dispatch<U>(IDoubleDispatchCallback callback, object? state)
+    public TResult Dispatch<U, TResult>(IDoubleDispatchCallback<TResult> callback, object? state)
     {
-        callback.Dispatch<T, U>(state);
+        return callback.Dispatch<T, U>(state);
     }
     
     // Work hard to avoid elision

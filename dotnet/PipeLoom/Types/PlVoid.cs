@@ -15,6 +15,6 @@ public sealed class PlVoid : PlVariant
     {
         base.SetupMyConverters(in fromMyself);
 
-        fromMyself.To<Variant>().Using(static (in _) => Variant.Undefined);
+        fromMyself.To<Variant>().Using(static (_, in _) => Variant.Undefined);
     }
 }

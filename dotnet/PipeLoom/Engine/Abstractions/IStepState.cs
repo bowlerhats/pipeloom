@@ -15,8 +15,6 @@ public interface IStepState
     
     internal IPoolSet PoolSet { get; }
 
-    IBundle<T> NewBundle<T>();
-
-    // ValueTask<T> Step<T>(scoped in Detached<T> detached);
-    // ValueTask<T> Step<T, TCarry>(scoped in Detached<T> detached, TCarry carry);
+    ValueTask<T> Step<T>(Detached<T> detached);
+    ValueTask<T> Step<T, TCarry>(Detached<T> detached, TCarry carry);
 }

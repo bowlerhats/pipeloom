@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using PipeLoom.Engine.TypeConversions;
 
 namespace PipeLoom.Engine.Abstractions;
@@ -10,19 +9,19 @@ public interface IPlConverter
     PlTypeDef SourceType { get; }
     PlTypeDef TargetType { get; }
     
-    Variant Convert(scoped in Variant value);
+    Variant Convert(IWeaveContext context, scoped in Variant value);
 }
 
 public interface IPlTargetConverter<TTarget> : IPlConverter
 {
-    public delegate TTarget Converter(scoped in Variant v);
+    public delegate TTarget Converter(IWeaveContext context, scoped in Variant v);
 
     IPlTargetConverter<TTarget> Using(Converter converter);
 }
 
 public interface IPlOpaqueConverter : IPlConverter
 {
-    public delegate Variant Converter(scoped in Variant v);
+    public delegate Variant Converter(IWeaveContext context, scoped in Variant v);
 
     IPlOpaqueConverter Using(Converter converter);
 }
@@ -30,19 +29,19 @@ public interface IPlOpaqueConverter : IPlConverter
 public interface IPlRefToRefConverter<TSource, TTarget> : IPlConverter
     where TSource : class where TTarget : class
 {
-    IPlRefToRefConverter<TSource, TTarget> Using(Func<TSource, TTarget> converter);
+    IPlRefToRefConverter<TSource, TTarget> Using(Func<IWeaveContext, TSource, TTarget> converter);
 }
 
 public interface IPlRefToValueConverter<TSource, TTarget> : IPlConverter
     where TSource : class where TTarget : struct
 {
-    IPlRefToValueConverter<TSource, TTarget> Using(Func<TSource, TTarget> converter);
+    IPlRefToValueConverter<TSource, TTarget> Using(Func<IWeaveContext, TSource, TTarget> converter);
 }
 
 public interface IPlValueToRefConverter<TSource, TTarget> : IPlConverter
     where TSource : struct where TTarget : class
 {
-    public delegate TTarget Converter(scoped in TSource source);
+    public delegate TTarget Converter(IWeaveContext context, scoped in TSource source);
 
     IPlValueToRefConverter<TSource, TTarget> Using(Converter converter);
 }
@@ -50,7 +49,7 @@ public interface IPlValueToRefConverter<TSource, TTarget> : IPlConverter
 public interface IPlValueToValueConverter<TSource, TTarget> : IPlConverter
     where TSource : struct where TTarget : struct
 {
-    public delegate TTarget Converter(scoped in TSource source);
+    public delegate TTarget Converter(IWeaveContext context, scoped in TSource source);
 
     IPlValueToValueConverter<TSource, TTarget> Using(Converter converter);
 }
@@ -149,7 +148,7 @@ public readonly struct ConverterRegistrator
     {
         return this.FromValue<Variant>();
     }
-
+    
     internal TConverter Add<TConverter>(TConverter converter)
         where TConverter: PlConverter
     {

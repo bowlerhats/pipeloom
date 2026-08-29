@@ -221,10 +221,10 @@ internal sealed class TypeMap
         }
     }
 
-    private PlTypeDef ConstructGeneric(Type target, PlGenericType genericType)
+    internal PlTypeDef ConstructGeneric(Type target, PlGenericType genericType)
     {
         var args = target.GetGenericArguments().Select(this.TypeOf).ToList();
-        var constructed = genericType.Construct(target, args);
+        var constructed = genericType.ConstructGeneric(target, args);
         
         if (constructed is null)
             throw new PipeLoomException("Failed to construct from open generic");

@@ -53,7 +53,7 @@ public sealed class PlOpConstant : PlOperatorClass
 
     public override OperatorHandler ChooseHandler(WeaveNode node)
     {
-        return node.Arguments.Count() switch
+        return node.CountArguments() switch
         {
             0 => this.NullaryHandler,
             1 => this.UnaryHandler,

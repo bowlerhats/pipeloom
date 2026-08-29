@@ -22,8 +22,8 @@ internal sealed class PlOpaqueConverter : PlConverter, IPlOpaqueConverter
         return this;
     }
 
-    public override Variant Convert(scoped in Variant value)
+    public override Variant Convert(IWeaveContext context, scoped in Variant value)
     {
-        return this.ConverterFunc(in value);
+        return this.ConverterFunc(context, in value);
     }
 }

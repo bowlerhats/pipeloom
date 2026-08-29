@@ -1,4 +1,6 @@
-﻿namespace PipeLoom.Engine.Abstractions;
+﻿using System;
+
+namespace PipeLoom.Engine.Abstractions;
 
 public enum HandlerRole
 {
@@ -9,3 +11,18 @@ public enum HandlerRole
     Expander = 4,
     Bundler = 5
 }
+
+// public static class HandlerRoleUtils
+// {
+//     internal static bool IsLowerOrEquallyRanked(HandlerRole first, HandlerRole thanSecond)
+//     {
+//         if (first == HandlerRole.None || thanSecond == HandlerRole.None)
+//             return false;
+//         
+//         if (first == thanSecond || thanSecond == HandlerRole.Bundler)
+//             return true;
+//         
+//         
+//         throw new NotImplementedException();
+//     }
+// }

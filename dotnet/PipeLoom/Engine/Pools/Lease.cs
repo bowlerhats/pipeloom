@@ -6,17 +6,20 @@ namespace PipeLoom.Engine.Pools;
 public static class Lease
 {
     public static Lease<T> Tracked<T>(long ticket, IObjectPool<T> pool)
+        where T: class
     {
         return new Lease<T>(ticket, pool);
     }
     
     public static Lease<T> Untracked<T>(T item, IObjectPool<T> pool)
+        where T: class
     {
         return new Lease<T>(item, pool);
     }
 }
 
 public readonly struct Lease<T>: IDisposable
+    where T: class
 {
     private readonly long _ticket;
     private readonly IObjectPool<T> _pool;
@@ -25,17 +28,17 @@ public readonly struct Lease<T>: IDisposable
     // ReSharper disable once ConvertToAutoPropertyWhenPossible
     public long Ticket => _ticket;
     
-    public bool IsTracked => _ticket >= 0;
+    public bool IsTracked => _ticket > 0;
     
     public T Item => this.IsTracked ? _pool.GetLeasedItem(_ticket) : _captured;
 
     internal Lease(long ticket, IObjectPool<T> pool)
     {
-        Debug.Assert(ticket >= 0);
+        Debug.Assert(ticket > 0);
         
         _ticket = ticket;
         _pool = pool;
-        _captured = default!;
+        _captured = null!;
     }
 
     internal Lease(T pinned, IObjectPool<T> pool)
@@ -50,19 +53,13 @@ public readonly struct Lease<T>: IDisposable
         this.Release();
     }
 
-    public Lease<TAlter> As<TAlter>()
+    /// <summary>
+    /// Checks if a tracked lease is alive in the pool
+    /// </summary>
+    /// <returns>True if it is active, false if this lease is not tracked or not present in the pool</returns>
+    public bool IsAlive()
     {
-        if (!typeof(TAlter).IsAssignableFrom(typeof(T)))
-        {
-            throw new InvalidCastException($"Lease of type '{typeof(T).Name}' cannot be assigned to requested type '{typeof(TAlter).Name}' ");
-        }
-        
-        if (this.IsTracked)
-            return new Lease<TAlter>(_ticket, (IObjectPool<TAlter>)_pool);
-
-        return _captured is TAlter alter
-            ? new Lease<TAlter>(alter, (IObjectPool<TAlter>)_pool)
-            : throw new InvalidCastException($"Captured lease of type '{typeof(T).Name}' cannot be cast to requested type '{typeof(TAlter).Name}' ");
+        return this.IsTracked && _pool.IsLeaseActive(_ticket);
     }
     
     /// <summary>
@@ -92,7 +89,7 @@ public readonly struct Lease<T>: IDisposable
         {
             _pool.Release(_ticket);
         }
-        else
+        else if (_captured is not null)
         {
             _pool.Return(_captured);
         }

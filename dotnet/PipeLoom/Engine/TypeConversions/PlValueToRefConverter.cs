@@ -23,12 +23,12 @@ internal sealed class PlValueToRefConverter<TSource, TTarget> : PlConverter, IPl
         return this;
     }
 
-    public override Variant Convert(scoped in Variant value)
+    public override Variant Convert(IWeaveContext context, scoped in Variant value)
     {
         if (!value.TryUnpack<TSource>(out var unpacked))
             throw InvalidConversion();
         
-        var converted = this.ConverterFunc(in unpacked);
+        var converted = this.ConverterFunc(context, in unpacked);
         
         // TODO: assess that converted is in fact targettype
         

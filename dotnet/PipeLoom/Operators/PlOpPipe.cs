@@ -21,22 +21,51 @@ public sealed class PlOpPipe : PlOperatorClass
     {
         base.RegisterHandlers(registrator);
         
-        registrator.AsVariadic<Variant, Detached<Variant>>().Bundler(Pipe);
-    }
-    
-    
-
-    public static ValueTask<IBundle<Variant>> Pipe(
-        WeaveStep step,
-        IReadOnlyBundle<Variant> bundle,
-        ReadOnlyMemory<Detached<Variant>> children)
-    {
-        throw new NotImplementedException();
+        registrator.AsVariadic<Detached<Variant>>().Function(Pipe, cfg => cfg.ReturnAs(Narrow));
     }
 
-    public override ValueTask<PreFuseFlags> PreFuse(WeaveNode node)
+
+    private static PlTypeDef Narrow(WeaveNode node, PlTypeDef _)
     {
-        return base.PreFuse(node);
+        var last = node.Arguments.LastOrDefault();
+
+        return last?.ReturnType ?? node.Engine.WellKnown.Void;
+    }
+    
+    public static async ValueTask<Variant> Pipe(WeaveStep step, ReadOnlyMemory<Detached<Variant>> children)
+    {
+        var carry = Variant.Undefined;
+
+        var childCount = children.Length;
+        for (var i = 0; i < childCount; i++)
+        {
+            var child = children.Span[i];
+            var stepResult = await step.State.Step(child, carry);
+
+            if (child.Node.IsArgument)
+            {
+                carry = stepResult;
+            }
+        }
+
+        return carry;
+    }
+    
+    public override async ValueTask<PreFuseFlags> PreFuse(WeaveNode node)
+    {
+        var carry = node.CarryType;
+        
+        foreach (var child in node.Children.ToList())
+        {
+            child.CarryType = carry;
+
+            await child.Fuse();
+            
+            if (child.IsArgument)
+                carry = child.ReturnType;
+        }
+        
+        return PreFuseFlags.SkipChildFuse;
     }
 
     public override OperatorHandler? ChooseHandler(WeaveNode node)

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using PipeLoom.Engine;
@@ -86,7 +85,7 @@ public abstract class PlOperatorClass //: IPlOperatorClass
     //     }
     // }
 
-    internal OperatorHandler? FindMostSpecific(HandlerSignature searched)
+    internal OperatorHandler? FindMostSpecific(HandlerSignature searched, bool onlyWithRole = false)
     {
         ArgumentNullException.ThrowIfNull(searched);
 
@@ -97,6 +96,9 @@ public abstract class PlOperatorClass //: IPlOperatorClass
         {
             if (!searched.IsSuperSetOf(handler.Signature))
                 continue; // handler is out of bounds of search signature
+            
+            if (onlyWithRole && handler.Role == HandlerRole.None)
+                continue;
 
             res ??= handler;
             
@@ -122,8 +124,19 @@ public abstract class PlOperatorClass //: IPlOperatorClass
 
     public virtual OperatorHandler? ChooseHandler(WeaveNode node)
     {
-        var searchLimit = HandlerSignature.From(this.Engine.WellKnown.Variant, node.Arguments.Select(d => d.ReturnType));
+        if (node.CarryType is not null)
+        {
+            var carriedLimit = HandlerSignature.From(
+                this.Engine.WellKnown.Variant,
+                node.Arguments.Select(d => d.ReturnType).Prepend(node.CarryType));
 
+            var candidate = this.FindMostSpecific(carriedLimit, true);
+            if (candidate is not null)
+                return candidate;
+        }
+
+        var searchLimit = HandlerSignature.From(this.Engine.WellKnown.Variant, node.Arguments.Select(d => d.ReturnType));
+        
         return this.FindMostSpecific(searchLimit);
     }
 }

@@ -2,14 +2,17 @@
 using PipeLoom.Builder;
 using PipeLoom.Engine;
 using PipeLoom.Engine.Abstractions;
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 
 namespace Benchmarks;
 
 [MemoryDiagnoser]
+// [DotMemoryDiagnoser]
 public class SimpleExecutionBenchmarks
 {
     private PipeLoomEngine _engine;
     private WeavePlan _plan;
+    private WeavePlan _plan2;
     private int[] _testNumbers;
     
     [GlobalSetup]
@@ -23,8 +26,15 @@ public class SimpleExecutionBenchmarks
         
         _engine = PipeLoomBuilder.Create().Build();
         _plan = new WeavePlan(_engine);
-        _plan.RootNode.AppendOperator("sum").AppendValue(new Many<int>(_testNumbers));
-        await _plan.Fuse<int>();
+        _plan.RootNode.AppendOperator("sum").AppendValue(Many.Create(_testNumbers));
+        await _plan.Fuse<long>();
+        
+        _plan2 = new WeavePlan(_engine);
+        var p2Pipe = _plan2.RootNode.AppendOperator("pipe");
+        p2Pipe.AppendValue(Many.Create(_testNumbers));
+        p2Pipe.AppendOperator("sum");
+        await _plan2.Fuse<long>();
+        
     }
 
     [GlobalCleanup]
@@ -36,15 +46,21 @@ public class SimpleExecutionBenchmarks
         _testNumbers = [];
     }
 
-    [Benchmark]
-    public int Sum_Linq()
+    // [Benchmark]
+    public long Sum_Linq()
     {
         return _testNumbers.Sum();
     }
 
     [Benchmark]
-    public async ValueTask<int> Sum_Plan()
+    public async ValueTask<decimal> Sum_Plan()
     {
-        return await _engine.Execute<int>(_plan);
+        return await _engine.Execute<decimal>(_plan);
+    }
+    
+    // [Benchmark]
+    public async ValueTask<decimal> Sum_Plan2()
+    {
+        return await _engine.Execute<decimal>(_plan2);
     }
 }

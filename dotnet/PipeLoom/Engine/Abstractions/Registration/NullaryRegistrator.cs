@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using PipeLoom.Engine.Abstractions.Adapters;
+using PipeLoom.Engine.Abstractions.Bundles;
 using PipeLoom.Operators.Abstractions.Handlers;
 
 namespace PipeLoom.Engine.Abstractions.Registration;

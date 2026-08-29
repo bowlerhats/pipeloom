@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using PipeLoom.Engine;
 using PipeLoom.Engine.Abstractions;
 
 namespace PipeLoom.Types.Abstractions;
@@ -68,9 +69,9 @@ public abstract class PlTypeDef
         return this.Engine.Conversions.IsConvertible(this, target);
     }
 
-    public virtual Variant ConvertTo(scoped in Variant value, PlTypeDef target)
+    public virtual Variant ConvertTo(IWeaveContext context, scoped in Variant value, PlTypeDef target)
     {
-        return this.Engine.Conversions.Convert(in value, target);
+        return this.Engine.Conversions.Convert(context, in value, target);
     }
     
     public virtual string? VariantToStringForDebug(scoped in Variant v)

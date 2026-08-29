@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using PipeLoom.Engine;
 using PipeLoom.Engine.Abstractions;
 
 namespace PipeLoom.Types;
@@ -9,15 +8,25 @@ namespace PipeLoom.Types;
 public sealed class PlGenericDetached : PlGenericType
 {
     public override string Name => "Detached<>";
-    
+    public override bool SupportsHomomorphicConversion => true;
+
     public PlGenericDetached(IPipeLoomEngine engine)
         : base(typeof(Detached<>), engine)
     {
     }
 
-    public override PlTypeDef Construct(Type concreteType, IReadOnlyList<PlTypeDef> arguments)
+    protected override PlTypeDef Construct(Type concreteType, IReadOnlyList<PlTypeDef> arguments)
     {
         return new PlDetached(concreteType, this, arguments.Single(), this.Engine);
+    }
+
+    public override IPlConverter BuildHomomorphicConverter<TSourceInner, TTargetInner>(ConverterBuilderParams builderParams)
+    {
+        return builderParams.Convertible
+            .FromValue<Detached<TSourceInner>>()
+            .ToValue<Detached<TTargetInner>>()
+            // because Detached is not holding anything of the inner types a simple reinterpret cast is fine
+            .Using(static (_, in v) => Variant.From(v).Unpack<Detached<TTargetInner>>(reinterpret: true));
     }
 }
 
@@ -32,6 +41,8 @@ public sealed class PlDetached : PlTypeDef, IPlConstructed<PlGenericDetached>, I
     public IReadOnlyList<PlTypeDef> GenericArguments { get; }
     
     public PlTypeDef InnerType { get; }
+    
+    PlTypeDef IPlConstructed.SelfType => this;
     
     public PlDetached(
         Type concreteType,
@@ -55,7 +66,7 @@ public sealed class PlDetached : PlTypeDef, IPlConstructed<PlGenericDetached>, I
 
     public bool TryProvide(IStepState state, int childIndex, out Variant providedInputArg)
     {
-        providedInputArg = Variant.From(new Detached<Variant>((StepState)state, childIndex), state.Context.Engine);
+        providedInputArg = Variant.From(new Detached<Variant>(state.Node.Children[childIndex]), state.Context.Engine);
         return true;
     }
 }

@@ -39,6 +39,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Benchmarks, PublicKey=0024000004800000940000000602000000240000525341310004000001000100d99eec8168cca5d56c26786c3ab8b5ef56aea7d56943d2a50b9e0bd30f602fe7d366f34e2e8c7c1cc5f999c57fcd5d0fb99bd0dd2d4ee6ec1a986436c07ee31a4ac98bfde7abe0d96698cb98c28135f688aa5d5ebf6b058891ef6e1766ee5763ee1794689c1cd4b129707219f3e4f1d5af37d654c8544316d341742f092868b7" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="readme.md" Pack="true" PackagePath="\"/>
   </ItemGroup>
 
@@ -46,17 +50,13 @@
     <PackageReference Include="JetBrains.Annotations" Version="2026.2.0" PrivateAssets="All" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0" PrivateAssets="compile;analyzers" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="10.0.0" PrivateAssets="compile;analyzers" />
+    <PackageReference Include="System.Numerics.Tensors" Version="10.0.0" PrivateAssets="compile;analyzers" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\PipeLoom.Analyzers\PipeLoom.Analyzers.csproj" 
                       OutputItemType="Analyzer" 
                       ReferenceOutputAssembly="false"    />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Engine\Abstractions\Conversions\" />
-    <Folder Include="Engine\Errors\" />
   </ItemGroup>
 
 </Project>

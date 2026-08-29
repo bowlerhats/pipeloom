@@ -22,9 +22,9 @@ internal sealed class PlTargetConverter<TTarget> : PlConverter, IPlTargetConvert
         return this;
     }
 
-    public override Variant Convert(scoped in Variant value)
+    public override Variant Convert(IWeaveContext context, scoped in Variant value)
     {
-        var converted = this.ConverterFunc(in value);
+        var converted = this.ConverterFunc(context, in value);
 
         return Variant.From(converted, this.TargetType);
     }

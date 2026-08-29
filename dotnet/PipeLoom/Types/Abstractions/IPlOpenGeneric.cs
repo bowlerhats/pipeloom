@@ -1,10 +1,10 @@
 ﻿using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 
 namespace PipeLoom.Types.Abstractions;
 
 public interface IPlConstructed
 {
+    PlTypeDef SelfType { get; }
     PlGenericType GenericType { get; }
     IReadOnlyList<PlTypeDef> GenericArguments { get; }
 }

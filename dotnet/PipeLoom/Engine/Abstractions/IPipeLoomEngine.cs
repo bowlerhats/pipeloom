@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using JetBrains.Annotations;
+using PipeLoom.Engine.Abstractions.Bundles;
 
 namespace PipeLoom.Engine.Abstractions;
 
@@ -26,4 +27,11 @@ public interface IPipeLoomEngine : IDisposable
     void Touch<T>();
 
     internal int NextTypeId();
+    
+    internal TypeMap TypeMap { get; }
+
+    static void Discover<T>()
+    {
+        Discovery.Discover<T>();
+    }
 }

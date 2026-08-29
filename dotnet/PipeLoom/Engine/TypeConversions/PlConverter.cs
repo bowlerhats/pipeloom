@@ -3,7 +3,7 @@ using PipeLoom.Engine.Abstractions.Errors;
 
 namespace PipeLoom.Engine.TypeConversions;
 
-internal abstract class PlConverter : IPlConverter
+public abstract class PlConverter : IPlConverter
 {
     public IPipeLoomEngine Engine { get; }
     
@@ -11,6 +11,8 @@ internal abstract class PlConverter : IPlConverter
     public PlTypeDef TargetType { get; }
 
     public ulong TypeId => PlTypeDef.CombineIds(this.SourceType, this.TargetType);
+
+    public virtual int Cost => 1;
 
     protected PlConverter(
         PlTypeDef sourceType,
@@ -22,7 +24,7 @@ internal abstract class PlConverter : IPlConverter
         this.Engine = engine;
     }
 
-    public abstract Variant Convert(scoped in Variant value);
+    public abstract Variant Convert(IWeaveContext context, scoped in Variant value);
 
     protected static PipeLoomException InvalidConversion()
     {

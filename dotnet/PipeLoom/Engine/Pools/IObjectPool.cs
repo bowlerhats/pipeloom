@@ -5,6 +5,8 @@ namespace PipeLoom.Engine.Pools;
 
 public interface IObjectPool : IDisposable
 {
+    bool IsDisposed { get; }
+    
     /// <summary>
     /// Releases a tracked lease and returns the item to the pool.
     /// </summary>
@@ -42,9 +44,22 @@ public interface IObjectPool : IDisposable
     /// </summary>
     /// <remarks>It does a best effort to release everything. Race conditions might leave leases active</remarks>
     void ReleaseAll();
+
+    /// <summary>
+    /// Prefills the pool to provided percentage
+    /// </summary>
+    void Warmup(uint percentage = 50);
+
+    /// <summary>
+    /// Checks if lease is tracked and active
+    /// </summary>
+    /// <param name="ticket">Ticket number of the lease</param>
+    /// <returns>True, if the lease is active</returns>
+    bool IsLeaseActive(long ticket);
 }
 
 public interface IObjectPool<T> : IObjectPool
+    where T: class
 {
     /// <summary>
     /// Rents an item from the pool and returns it as a tracked lease.

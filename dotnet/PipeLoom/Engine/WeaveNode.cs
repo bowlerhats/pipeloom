@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using PipeLoom.Engine.Abstractions;
@@ -26,7 +25,7 @@ public sealed class WeaveNode : IWeaveNode
     
     public WeaveNode? Parent { get; }
 
-    internal bool IsArgument => this.IsEnabled && !this.IsFuseOnly && (this.IsForcedArgument || !this.IsVoid);
+    public bool IsArgument => this.IsEnabled && !this.IsFuseOnly && (this.IsForcedArgument || !this.IsVoid);
     
     internal bool IsFuseOnly { get; private set; }
     internal bool IsVoid { get; set; }
@@ -44,6 +43,10 @@ public sealed class WeaveNode : IWeaveNode
     internal PlOperatorClass OperatorClass { get; private set; }
     
     internal OperatorHandler? Handler { get; private set; }
+    
+    internal PlTypeDef? CarryType { get; set; }
+
+    internal bool HasCarry => this.CarryType is not null;
     
     private readonly List<WeaveNode> _children = [];
     
@@ -63,6 +66,18 @@ public sealed class WeaveNode : IWeaveNode
         plan.AddNode(this);
         
         this.ResetFuse();
+    }
+
+    public int CountArguments()
+    {
+        var res = 0;
+        var count = _children.Count;
+        for (var i = 0; i < count; i++)
+        {
+            res += _children[i].IsArgument ? 1 : 0;
+        }
+
+        return res;
     }
 
     public WeaveNode AppendOperator(string operatorName)
@@ -100,7 +115,7 @@ public sealed class WeaveNode : IWeaveNode
         if (this.Handler is null)
         {
             var expectedTypeDesc =
-                $"({string.Join(',', _children.Select(d => d.ReturnType.Name))}) : {this.ReturnType.Name}";
+                $"({string.Join(',', _children.Select(d => d.ReturnType.Name).Prepend(this.CarryType?.Name ?? ""))}) : {this.ReturnType.Name}";
             
             throw new PipeLoomException($"Can't find handler for {this.OperatorName}: {expectedTypeDesc}");
         }

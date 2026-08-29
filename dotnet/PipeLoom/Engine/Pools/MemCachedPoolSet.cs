@@ -6,7 +6,7 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace PipeLoom.Engine.Pools;
 
-internal sealed class MemCachedPoolSet : PoolSet
+internal sealed class MemCachedPoolSet : PoolSet, IPoolReturnable
 {
     private readonly Lock _objectPoolFactoryLock = new();
     
@@ -17,7 +17,8 @@ internal sealed class MemCachedPoolSet : PoolSet
     
     private readonly ConcurrentDictionary<IObjectPool, bool> _touched = [];
     
-    public MemCachedPoolSet()
+    public MemCachedPoolSet(PipeLoomEngine engine)
+        : base(engine)
     {
         _objectPoolEntryOptions = new MemoryCacheEntryOptions();
         _objectPoolEntryOptions.RegisterPostEvictionCallback(this.ObjectPoolEvicted);
@@ -66,8 +67,12 @@ internal sealed class MemCachedPoolSet : PoolSet
         {
             pool.ReleaseAll();
         }
-        
-        _touched.Clear();
+
+        // Remove trick to avoid allocation for .Clear()
+        foreach (var touched in _touched)
+        {
+            _touched.TryRemove(touched);
+        }
     }
 
     public override ArrayPool<T> GetArrayPool<T>()
@@ -78,7 +83,7 @@ internal sealed class MemCachedPoolSet : PoolSet
         if (res is not null)
             return res;
         
-        res = ArrayPool<T>.Create();
+        res = ArrayPool<T>.Create(MagicNumbers.MaxArrayPoolArrayLength, MagicNumbers.MaxArrayPoolBucketSize);
         _arrayPools.Set(typeof(T), res);
 
         return res;
@@ -89,7 +94,10 @@ internal sealed class MemCachedPoolSet : PoolSet
         return this.GetObjectPool<T>(static _ => new T(), maxSize);
     }
 
-    public override IObjectPool<T> GetObjectPool<T>(Func<IObjectPool<T>, T> factory, int maxSize)
+    public override IObjectPool<T> GetObjectPool<T, TState>(
+        TState state,
+        Func<TState, IObjectPool<T>, T> factory,
+        int maxSize)
     {
         this.CheckDisposed();
         
@@ -114,7 +122,7 @@ internal sealed class MemCachedPoolSet : PoolSet
             }
             else
             {
-                var pool = new ObjectPool<T>(factory, maxSize);
+                var pool = new ObjectPool<T>(pool => factory(state, pool), maxSize);
                 _objectPools.Set(typeof(T), pool, _objectPoolEntryOptions);
             
                 _touched.TryAdd(pool, true);
@@ -124,6 +132,25 @@ internal sealed class MemCachedPoolSet : PoolSet
         }
     }
     
+    public override IObjectPool<T> GetObjectPool<T>(Func<IObjectPool<T>, T> factory, int maxSize)
+    {
+        return this.GetObjectPool<T, Func<IObjectPool<T>, T>>(factory, static (func, pool) => func(pool), maxSize);
+    }
+    
+    public ReturnResult OnReturn(IObjectPool pool)
+    {
+        // When the whole poolset is returned we have to clear
+        // the local "field cache" to force a get next time to keep the entries alive
+        // otherwise the memcache might choose to evict them when used
+        // This is not required for static poolsets since they don't use timeout caching
+        
+        this.BundleFactories = null!;
+        this.StepStates = null!;
+        this.PartitionPaths = null!;
+
+        return ReturnResult.Ok();
+    }
+    
     private void ObjectPoolEvicted(object _, object? value, EvictionReason reason, object? state)
     {
         if (value is not IObjectPool pool)
@@ -131,5 +158,7 @@ internal sealed class MemCachedPoolSet : PoolSet
         
         _touched.TryRemove(pool, out var _);
         pool.Dispose();
+        
+        this.OnObjectPoolEvicted(pool);
     }
 }

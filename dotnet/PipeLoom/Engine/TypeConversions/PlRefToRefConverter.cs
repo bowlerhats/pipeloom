@@ -7,9 +7,9 @@ namespace PipeLoom.Engine.TypeConversions;
 internal sealed class PlRefToRefConverter<TSource, TTarget> : PlConverter, IPlRefToRefConverter<TSource, TTarget>
     where TSource : class where TTarget : class
 {
-    private Func<TSource, TTarget>? _converter;
+    private Func<IWeaveContext, TSource, TTarget>? _converter;
 
-    internal Func<TSource, TTarget> ConverterFunc =>
+    internal Func<IWeaveContext, TSource, TTarget> ConverterFunc =>
         _converter ?? throw new PipeLoomException("Missing converter function");
     
     public PlRefToRefConverter(IPipeLoomEngine engine)
@@ -17,19 +17,19 @@ internal sealed class PlRefToRefConverter<TSource, TTarget> : PlConverter, IPlRe
     {
     }
 
-    public IPlRefToRefConverter<TSource, TTarget> Using(Func<TSource, TTarget> converter)
+    public IPlRefToRefConverter<TSource, TTarget> Using(Func<IWeaveContext, TSource, TTarget> converter)
     {
         _converter = converter;
 
         return this;
     }
     
-    public override Variant Convert(scoped in Variant value)
+    public override Variant Convert(IWeaveContext context, scoped in Variant value)
     {
         if (!value.TryUnpack<TSource>(out var unpacked))
             throw InvalidConversion();
         
-        var converted = this.ConverterFunc(unpacked);
+        var converted = this.ConverterFunc(context, unpacked);
         
         // TODO: assess that converted is in fact targettype
         

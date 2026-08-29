@@ -17,17 +17,18 @@ internal class Program
         plan.RootNode.AppendOperator("log").AppendValue("TEST2");
         
         //plan.RootNode.AppendOperator("const").AppendValue("RES");
-        // plan.RootNode.AppendValue(new Many<int>([1, 2, 3]));
+        // plan.RootNode.AppendOperator("sum").AppendValue(new Many<int>([1, 2, 3]));
         //plan.RootNode.AppendValue((decimal)1.33);
-        plan.RootNode.AppendOperator("sum")
-            .AppendValue(new Many<short>([1, 2, 3]));
+        
+        var pipe = plan.RootNode.AppendOperator("pipe");
+        pipe.AppendValue(Many.Wrap<short>([1, 2, 3]));
+        pipe.AppendOperator("sum");
+            //.AppendValue(new Many<short>([1, 2, 3]));
         
         var res = await engine.Execute<decimal>(plan);
         
         Console.WriteLine(res);
         
         Console.WriteLine("Hello, World!");
-
-
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -9,7 +10,10 @@ using System.Threading.Channels;
 namespace PipeLoom.Engine.Pools;
 
 internal sealed class ObjectPool<T> : IObjectPool<T>
+    where T: class
 {
+    public bool IsDisposed => _disposed;
+    
     private readonly Channel<T> _channel;
     private readonly Func<IObjectPool<T>, T> _factory;
     private readonly bool _isDisposable;
@@ -20,22 +24,35 @@ internal sealed class ObjectPool<T> : IObjectPool<T>
     private readonly ConcurrentDictionary<long, T> _leasesByTicket = [];
     
 #pragma warning disable CS8714 // The type cannot be used as type parameter in the generic type or method. Nullability of type argument doesn't match 'notnull' constraint.
-    private readonly ConcurrentDictionary<T, long> _leasesByItem = [];
+    private readonly ConcurrentDictionary<T, long> _leasesByItem;
 #pragma warning restore CS8714 // The type cannot be used as type parameter in the generic type or method. Nullability of type argument doesn't match 'notnull' constraint.
 
     private bool _disposed;
     private long _ticket;
+    private int _maxSize;
+
+    private readonly bool _hasCustomReturn;
+    private readonly Func<IObjectPool, T, ReturnResult> _returnFunc;
     
     public ObjectPool(Func<IObjectPool<T>, T> factory, int maxSize)
     {
         ArgumentNullException.ThrowIfNull(factory);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSize);
+
+        _leasesByItem = new ConcurrentDictionary<T, long>(ReferenceEqualityComparer.Instance);
+        
+        _maxSize = maxSize;
         
         _factory = factory;
         _isDisposable = typeof(IDisposable).IsAssignableFrom(typeof(T));
         _dispose = _isDisposable
-            ? static item => ((IDisposable)item!).Dispose()
+            ? static item => ((IDisposable)item).Dispose()
             : static _ => { };
+
+        _hasCustomReturn = typeof(IPoolReturnable).IsAssignableFrom(typeof(T));
+        _returnFunc = _hasCustomReturn
+            ? static (pool, item) => ((IPoolReturnable)item).OnReturn(pool)
+            : static (_, _) => ReturnResult.Ok();
 
         _channel = Channel.CreateBounded<T>(new BoundedChannelOptions(maxSize)
         {
@@ -60,6 +77,24 @@ internal sealed class ObjectPool<T> : IObjectPool<T>
         this.Clear(true);
         
         GC.SuppressFinalize(this);
+    }
+
+    public void Warmup(uint percentage = 50)
+    {
+        percentage = Math.Clamp(percentage, 0, 100);
+        var fill = (int)Math.Floor(_maxSize * percentage / 100d);
+        
+        for (var i = 0; i < fill; i++)
+        {
+            var created = _factory(this);
+            if (!_channel.Writer.TryWrite(created))
+                return;
+        }
+    }
+
+    public bool IsLeaseActive(long ticket)
+    {
+        return _leasesByTicket.ContainsKey(ticket);
     }
 
     public bool TryRentNoCreate([MaybeNullWhen(false)] out T rented)
@@ -87,6 +122,14 @@ internal sealed class ObjectPool<T> : IObjectPool<T>
 
         if (_leasesByItem.ContainsKey(obj))
             return; // actively leased, ignore
+
+        if (_hasCustomReturn && _returnFunc(this, obj).ShouldDrop)
+        {
+            if (_isDisposable)
+                _dispose(obj);
+            
+            return;
+        }
         
         if (!_channel.Writer.TryWrite(obj) && _isDisposable)
         {

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using PipeLoom.Engine.Abstractions;
+using PipeLoom.Engine.Abstractions.Bundles;
 using PipeLoom.Engine.Abstractions.Errors;
 using PipeLoom.Types.Scalars;
 
@@ -16,7 +17,7 @@ public sealed class PlGenericScalar : PlGenericType
     {
     }
 
-    public override PlTypeDef Construct(Type concreteType, IReadOnlyList<PlTypeDef> arguments)
+    protected override PlTypeDef Construct(Type concreteType, IReadOnlyList<PlTypeDef> arguments)
     {
         var arg = arguments.Single();
         if (arg.IsFloating)
@@ -61,6 +62,7 @@ public sealed class PlScalarOf : PlScalar, IPlConstructed<PlGenericScalar>
     public IReadOnlyList<PlTypeDef> GenericArguments { get; }
     
     public PlTypeDef InnerType { get; }
+    PlTypeDef IPlConstructed.SelfType => this;
     
     public PlScalarOf(
         Type concreteType,
@@ -88,5 +90,8 @@ public abstract class PlScalar<TScalar> : PlScalar
     protected PlScalar(IPipeLoomEngine engine)
         : base(engine)
     {
+        engine.Touch<TScalar>();
+        engine.Touch<Many<TScalar>>();
+        engine.Touch<IBundle<TScalar>>();
     }
 }
