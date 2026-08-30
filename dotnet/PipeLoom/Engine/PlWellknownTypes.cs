@@ -1,5 +1,4 @@
-﻿using System;
-using PipeLoom.Engine.Abstractions;
+﻿using PipeLoom.Engine.Abstractions;
 
 namespace PipeLoom.Engine;
 
@@ -10,15 +9,17 @@ internal sealed class PlWellknown : IPlWellknown
     public PlVariant Variant => field ??= this.GetType<PlVariant>();
     public PlVoid Void => field ??= this.GetType<PlVoid>();
 
-    public PlBundle Bundle => field ??= this.GetType<PlBundle>();
-    public PlMany Many => field ??= this.GetType<PlMany>();
+    // public PlBundle Bundle => field ??= this.GetType<PlBundle>();
+    // public PlMany Many => field ??= this.GetType<PlMany>();
 
-    public PlMany ManyOfVariant => throw new NotImplementedException(); 
+    // public PlReadOnlyBundleOf ReadOnlyBundleOfVariant => field ??= (PlReadOnlyBundleOf)this.TypeOf<IReadOnlyBundle<Variant>>();
+
+    // public PlManyOf ManyOfVariant => field ??= (PlManyOf)this.TypeOf<Many<Variant>>();
     
-    private PlTypeDef TypeOf<T>()
-    {
-        return this.Engine.TypeOf<T>();
-    }
+    // private PlTypeDef TypeOf<T>()
+    // {
+    //     return this.Engine.TypeOf<T>();
+    // }
 
     private T GetType<T>()
         where T: PlTypeDef

@@ -3,10 +3,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using PipeLoom.Engine.Abstractions.Bundles;
+using PipeLoom.Engine.Abstractions.Bundles.ListSources;
 using PipeLoom.Engine.Abstractions.Errors;
 
 namespace PipeLoom.Engine.Abstractions;
@@ -18,131 +18,140 @@ public static class Many
         return Many<T>.Empty;
     }
     
-    public static Many<T> Single<T>(T item)
+    public static Many<T> Single<T>(T item, IWeaveContext context)
     {
-        return Many<T>.Create(item);
+        var source = context.Bundles.SingleItemSource<T>();
+        source.Item = item;
+
+        return new Many<T>(source);
     }
 
-    public static Many<T> Wrap<T>(List<T> source)
+    public static Many<T> Wrap<T>(T[] source)
     {
-        return Many<T>.Create(source);
+        return new Many<T>(source);
     }
 
-    public static Many<T> CopyFrom<T>(List<T> source)
-    {
-        return Many<T>.Create(source.ToList());
-    }
-
-    public static Many<T> Create<T>(ReadOnlySpan<T> items, IWeaveContext? context = null)
+    public static Many<T> Create<T>(ReadOnlySpan<T> items, IWeaveContext context)
     {
         return items.Length switch
         {
             0 => Many<T>.Empty,
-            1 => Many<T>.Create(items[0]),
-            _ => Many<T>.Create(items, context)
+            1 => Single(items[0], context),
+            _ => Leased(items, context)
         };
+    }
+
+    public static Many<T> Concat<T>(IWeaveContext context, ReadOnlySpan<T> items, params ReadOnlySpan<T> others)
+    {
+        var total = items.Length + others.Length;
+        switch (total)
+        {
+            case 0 : return Empty<T>();
+            case 1 : return items.Length > 0 ? Single(items[0], context) : Single(others[0], context);
+        }
+
+        var pool = context.Pools.GetArrayPool<T>();
+        var buffer = pool.Rent(total);
+        try
+        {
+            if (items.Length > 0)
+                items.CopyTo(buffer);
+            
+            if (others.Length > 0)
+                others.CopyTo(buffer.AsSpan(items.Length));
+
+            return Leased(buffer.AsSpan(0, total), context);
+        }
+        finally
+        {
+            pool.Return(buffer, true);
+        }
+    }
+
+    private static Many<T> Leased<T>(ReadOnlySpan<T> items, IWeaveContext context)
+    {
+        var leased = context.Bundles.LeaseList<T>();
+        leased.ReplaceItems(items);
+        
+        return new Many<T>(leased);
     }
 }
 
 public enum ManyStoreKind
 {
     Empty = 0,
-    Single = 1,
+    Array = 1,
     Source = 2,
-    List = 3,
-    LeasedList = 4
+    LeasedList = 3
 }
 
+[StructLayout(LayoutKind.Sequential, Size = 16)]
 public readonly struct Many<T> : IVariantDecomposable<Many<T>>, IForcedStaticalyInitialized
 {
-    public static readonly Many<T> Empty = default;
-
-    internal static Many<T> Create(ReadOnlySpan<T> items, IWeaveContext? context)
-    {
-        if (context is null)
-            return new Many<T>(items);
-
-        var leased = context.Bundles.LeaseList<T>();
-        leased.ReplaceItems(items);
-
-        return new Many<T>(leased);
-    }
-    
-    internal static Many<T> Create(List<T> list)
-    {
-        return new Many<T>(list);
-    }
-
-    internal static Many<T> Create(T item)
-    {
-        return new Many<T>(item);
-    }
+    public static readonly Many<T> Empty;
     
     private readonly ManyStoreKind _kind;
-    private readonly T? _single;
-    private readonly IListSource? _source;
-    private readonly List<T>? _list;
-    private readonly ILeasedList<T>? _leased;
+    private readonly object? _store;
     
     public int Length => this.GetLength();
     public T this[int index] => this.GetItem(index);
+    
+    private T[] AsArray => (T[])(_store ?? throw MissingStore());
+    private IListSource<T> AsSource => (IListSource<T>)(_store ?? throw MissingStore());
+    private ILeasedList<T> AsLeased => (ILeasedList<T>)(_store ?? throw MissingStore());
+    private IUnsafeSpanProvider<T> AsUnsafe => _store as IUnsafeSpanProvider<T> ?? throw UnsupportedSpan();
 
     private Many(ManyStoreKind kind)
     {
         _kind = kind;
     }
-
-    private Many(T item)
-        : this(ManyStoreKind.Single)
+    
+    internal Many(T[] array)
+        : this(ManyStoreKind.Array)
     {
-        if (item is null)
-            throw new ArgumentNullException(nameof(item));
-
-        _single = item;
+        ArgumentNullException.ThrowIfNull(array);
+        
+        _store = array;
     }
 
-    private Many(IListSource source)
+    internal Many(IListSource<T> source)
         : this(ManyStoreKind.Source)
     {
-        _source = source;
-    }
-
-    [OverloadResolutionPriority(1)]
-    private Many(ReadOnlySpan<T> items)
-        : this(ManyStoreKind.List)
-    {
-        _list = new List<T>(items.Length);
-        _list.AddRange(items);
-    }
-    
-    private Many(List<T> items)
-        : this(ManyStoreKind.List)
-    {
-        ArgumentNullException.ThrowIfNull(items);
+        ArgumentNullException.ThrowIfNull(source);
         
-        _list = items;
+        _store = source;
     }
 
-    private Many(ILeasedList<T> leased)
+    internal Many(ILeasedList<T> leased)
         : this(ManyStoreKind.LeasedList)
     {
         ArgumentNullException.ThrowIfNull(leased);
         
-        _leased = leased;
+        _store = leased;
     }
-    
+
     [Pure]
     public ReadOnlySpan<T> AsSpan()
     {
         return _kind switch
         {
             ManyStoreKind.Empty => ReadOnlySpan<T>.Empty,
-            ManyStoreKind.Single => new [] { _single! },
-            ManyStoreKind.Source => throw new NotSupportedException(),
-            ManyStoreKind.List => CollectionsMarshal.AsSpan(_list),
-            ManyStoreKind.LeasedList => _leased is IUnsafeSpanProvider<T> provider
-                ? provider.UnsafeAsSpan()
-                : throw new PipeLoomException("Leased list does not provide spans via IUnsafeSpanProvider<T>"),
+            ManyStoreKind.Array => this.AsArray.AsSpan(),
+            ManyStoreKind.Source or ManyStoreKind.LeasedList
+                => this.AsUnsafe.UnsafeAsSpan(),
+            _ => throw UnknownKindError()
+        };
+    }
+    
+    [Pure]
+    public ReadOnlyMemory<T> AsMemory()
+    {
+        return _kind switch
+        {
+            ManyStoreKind.Empty => ReadOnlyMemory<T>.Empty,
+            ManyStoreKind.Array => this.AsArray.AsMemory(),
+            ManyStoreKind.Source or ManyStoreKind.LeasedList
+                => this.AsUnsafe.UnsafeAsMemory(),
             _ => throw UnknownKindError()
         };
     }
@@ -158,25 +167,22 @@ public readonly struct Many<T> : IVariantDecomposable<Many<T>>, IForcedStaticaly
     {
         return _kind switch
         {
-            ManyStoreKind.Empty => new List<T>(),
-            ManyStoreKind.Single => new List<T>(1) { _single! },
-            ManyStoreKind.Source => throw new NotSupportedException(),
-            ManyStoreKind.List => _list?.ToList(),
-            ManyStoreKind.LeasedList => _leased?.ToList(),
+            ManyStoreKind.Empty => [],
+            ManyStoreKind.Array => this.AsArray.ToList(),
+            ManyStoreKind.Source => this.AsSource.ToList(),
+            ManyStoreKind.LeasedList => this.AsLeased.ToList(),
             _ => throw UnknownKindError()
-        } ?? [];
+        };
     }
 
     [Pure]
     public Many<Variant> ToVariantMany(IWeaveContext context)
     {
-        return _kind switch
+        return this.Length switch
         {
-            ManyStoreKind.Empty => Many.Empty<Variant>(),
-            ManyStoreKind.Single => Many.Single(Variant.From(_single, context.Engine)),
-            ManyStoreKind.Source => throw new NotSupportedException(),
-            ManyStoreKind.List or ManyStoreKind.LeasedList => this.PackVariants(context),
-            _ => throw UnknownKindError()
+            0 => Many.Empty<Variant>(),
+            1 => Many.Single(Variant.From(this.GetItem(0), context.Engine), context),
+            _ => this.PackVariants(context)
         };
     }
 
@@ -189,17 +195,12 @@ public readonly struct Many<T> : IVariantDecomposable<Many<T>>, IForcedStaticaly
     [Pure]
     public Many<TOther> ConvertTo<TOther, TState>(IWeaveContext context, TState state, Func<TState, T, TOther> converterFunc)
     {
-        switch (_kind)
+        switch (this.Length)
         {
-            case ManyStoreKind.Empty:
-                return Many.Empty<TOther>();
-            case ManyStoreKind.Single:
-                var cSingle = converterFunc(state, _single!);
-                return Many.Single(cSingle);
-            case ManyStoreKind.Source:
-                throw new NotSupportedException();
+            case 0 : return Many.Empty<TOther>();
+            case 1 : return Many.Single(converterFunc(state, this.GetItem(0)), context);
         }
-        
+
         var itemCount = this.Length;
         var pool = context.Pools.GetArrayPool<TOther>();
         var buffer = pool.Rent(itemCount);
@@ -215,12 +216,11 @@ public readonly struct Many<T> : IVariantDecomposable<Many<T>>, IForcedStaticaly
             }
             else
             {
-                // todo: convert to non-boxing if possible
-                var local = this;
+                var memory = this.AsMemory();
                 Parallel.For(0, itemCount, MagicNumbers.DefaultParallelOptions,
                     i =>
                     {
-                        buffer[i] = converterFunc(state, local[i]);
+                        buffer[i] = converterFunc(state, memory.Span[i]);
                     });
             }
 
@@ -246,12 +246,11 @@ public readonly struct Many<T> : IVariantDecomposable<Many<T>>, IForcedStaticaly
         return _kind switch
         {
             ManyStoreKind.Empty => [],
-            ManyStoreKind.Single => Enumerable.Repeat(_single!, 1),
-            ManyStoreKind.List => _list,
-            ManyStoreKind.LeasedList => _leased,
-            ManyStoreKind.Source => throw new NotSupportedException(),
+            ManyStoreKind.Array => this.AsArray,
+            ManyStoreKind.Source => this.AsSource.AsEnumerable(),
+            ManyStoreKind.LeasedList => this.AsLeased,
             _ => throw UnknownKindError()
-        } ?? [];
+        };
     }
 
     [Pure]
@@ -260,18 +259,24 @@ public readonly struct Many<T> : IVariantDecomposable<Many<T>>, IForcedStaticaly
         switch (_kind)
         {
             case ManyStoreKind.Empty:
-                return new Many<T>(item);
-            case ManyStoreKind.Single:
-                return new Many<T>([_single!, item]);
+                return new Many<T>([item]);
+            case ManyStoreKind.Array:
+                return new Many<T>([..this.AsArray, item]);
             case ManyStoreKind.Source:
-                throw new NotSupportedException();
-            case ManyStoreKind.List:
-                return this.AddAsList(item);
-            case ManyStoreKind.LeasedList:
-                if (_leased is null)
-                    return this.AddAsList(item);
+                if (this.AsSource.TryAddImmutable(item, out var newSource))
+                {
+                    return new Many<T>(newSource);
+                }
 
-                var newLeased = _leased.Clone();
+                if (this.AsSource.Context is not null)
+                {
+                    return Many.Concat(this.AsSource.Context, this.AsSpan(), item);
+                }
+
+                return Many.Wrap([.. this.AsSpan(), item]);
+            case ManyStoreKind.LeasedList:
+                
+                var newLeased = this.AsLeased.Clone();
                 newLeased.Add(item);
 
                 return new Many<T>(newLeased);
@@ -280,28 +285,17 @@ public readonly struct Many<T> : IVariantDecomposable<Many<T>>, IForcedStaticaly
         }
     }
 
-    private Many<T> AddAsList(T item)
-    {
-        var newCapacity = this.Length + 1;
-        
-        var listResult = new List<T>(newCapacity);
-        
-        listResult.AddRange(this.AsEnumerable());
-
-        listResult.Add(item);
-                
-        return new Many<T>(listResult);
-    }
-
     private int GetLength()
     {
+        if (_store is null)
+            return 0;
+        
         return _kind switch
         {
             ManyStoreKind.Empty => 0,
-            ManyStoreKind.Single => 1,
-            ManyStoreKind.Source => 0,
-            ManyStoreKind.List => _list?.Count ?? 0,
-            ManyStoreKind.LeasedList => _leased?.Count ?? 0,
+            ManyStoreKind.Array => this.AsArray.Length,
+            ManyStoreKind.Source => this.AsSource.Count,
+            ManyStoreKind.LeasedList => this.AsLeased.Count,
             _ => throw UnknownKindError()
         };
     }
@@ -311,10 +305,9 @@ public readonly struct Many<T> : IVariantDecomposable<Many<T>>, IForcedStaticaly
         return _kind switch
         {
             ManyStoreKind.Empty => throw new IndexOutOfRangeException(),
-            ManyStoreKind.Single => index == 0 ? _single! : throw new IndexOutOfRangeException(),
-            ManyStoreKind.Source => throw new NotSupportedException(),
-            ManyStoreKind.List => _list is not null ? _list[index] : throw new IndexOutOfRangeException(),
-            ManyStoreKind.LeasedList => _leased is not null ? _leased[index] : throw new IndexOutOfRangeException(),
+            ManyStoreKind.Array => this.AsArray[index],
+            ManyStoreKind.Source => this.AsSource.GetItem(index),
+            ManyStoreKind.LeasedList => this.AsLeased[index],
             _ => throw UnknownKindError()
         };
     }
@@ -322,6 +315,16 @@ public readonly struct Many<T> : IVariantDecomposable<Many<T>>, IForcedStaticaly
     private static InvalidOperationException UnknownKindError()
     {
         return new InvalidOperationException("Unrecognized kind of Many");
+    }
+
+    private static InvalidOperationException MissingStore()
+    {
+        return new InvalidOperationException("Missing underlying item store for Many");
+    }
+
+    private static PipeLoomException UnsupportedSpan()
+    {
+        return new PipeLoomException("Underlying type could not provide span or memory");
     }
     
     #region Decomposable
@@ -334,15 +337,7 @@ public readonly struct Many<T> : IVariantDecomposable<Many<T>>, IForcedStaticaly
     
     public (object? reference, Many<T> bare) DecomposeForVariant()
     {
-        object? reference = _kind switch
-        {
-            ManyStoreKind.Empty => null,
-            ManyStoreKind.Single => RuntimeHelpers.IsReferenceOrContainsReferences<T>() ? _single : null,
-            ManyStoreKind.Source => _source,
-            ManyStoreKind.List => _list,
-            ManyStoreKind.LeasedList => _leased,
-            _ => throw UnknownKindError()
-        };
+        var reference = _store;
 
         var bare = new Many<T>(_kind);
         
@@ -353,20 +348,16 @@ public readonly struct Many<T> : IVariantDecomposable<Many<T>>, IForcedStaticaly
     {
         if (reference is null)
         {
-            return bare._kind switch
-            {
-                ManyStoreKind.Empty => default,
-                ManyStoreKind.Single when !RuntimeHelpers.IsReferenceOrContainsReferences<T>() => bare,
-                _ => throw new PipeLoomException("Invalidly deconstructed Many")
-            };
+            return bare._kind == ManyStoreKind.Empty
+                ? default
+                : throw new PipeLoomException("Non-empty Many needs a reference to reconstruct");
         }
         
         return bare._kind switch
         {
             ManyStoreKind.Empty => throw new PipeLoomException("Invalid decomposed Many state. Empty has a reference?!"),
-            ManyStoreKind.Single => new Many<T>((T)reference),
-            ManyStoreKind.Source => new Many<T>((IListSource)reference),
-            ManyStoreKind.List => new Many<T>((List<T>)reference),
+            ManyStoreKind.Array => new Many<T>((T[])reference),
+            ManyStoreKind.Source => new Many<T>((IListSource<T>)reference),
             ManyStoreKind.LeasedList => new Many<T>((ILeasedList<T>)reference),
             _ => throw UnknownKindError()
         };
@@ -377,8 +368,9 @@ public readonly struct Many<T> : IVariantDecomposable<Many<T>>, IForcedStaticaly
     public struct Enumerator : IEnumerator<T>
     {
         private readonly Many<T> _many;
-        private List<T>.Enumerator _listEnumerator = default;
+        private ArraySegment<T>.Enumerator _arrayEnumerator = default;
         private LeasedListEnumerator<T> _leasedEnumerator = default;
+        private ListSourceEnumerator<T> _sourceEnumerator = default!;
         private bool _finished;
         
         public T Current { get; private set; }
@@ -396,15 +388,14 @@ public readonly struct Many<T> : IVariantDecomposable<Many<T>>, IForcedStaticaly
                 case ManyStoreKind.Empty:
                     _finished = true;
                     break;
-                case ManyStoreKind.Single:
+                case ManyStoreKind.Array:
+                    _arrayEnumerator = new ArraySegment<T>(many.AsArray).GetEnumerator();
                     break;
                 case ManyStoreKind.Source:
-                    throw new NotSupportedException();
-                case ManyStoreKind.List:
-                    _listEnumerator = many._list!.GetEnumerator();
+                    _sourceEnumerator = many.AsSource.GetEnumerator();
                     break;
                 case ManyStoreKind.LeasedList:
-                    _leasedEnumerator = many._leased!.GetEnumerator();
+                    _leasedEnumerator = many.AsLeased.GetEnumerator();
                     break;
                 default:
                     throw UnknownKindError();
@@ -417,8 +408,11 @@ public readonly struct Many<T> : IVariantDecomposable<Many<T>>, IForcedStaticaly
         {
             switch (_many._kind)
             {
-                case ManyStoreKind.List:
-                    _listEnumerator.Dispose();
+                case ManyStoreKind.Array:
+                    _arrayEnumerator.Dispose();
+                    break;
+                case ManyStoreKind.Source:
+                    _sourceEnumerator.Dispose();
                     break;
                 case ManyStoreKind.LeasedList:
                     _leasedEnumerator.Dispose();
@@ -438,21 +432,25 @@ public readonly struct Many<T> : IVariantDecomposable<Many<T>>, IForcedStaticaly
             {
                 case ManyStoreKind.Empty:
                     throw new PipeLoomException("Attempted enumeration of empty Many");
-                case ManyStoreKind.Single:
-                    this.Current = _many._single!;
-                    _finished = true;
-                    return true;
-                case ManyStoreKind.Source:
-                    throw new NotSupportedException();
-                case ManyStoreKind.List:
-                    if (!_listEnumerator.MoveNext())
+                case ManyStoreKind.Array:
+                    if (!_arrayEnumerator.MoveNext())
                     {
                         _finished = true;
                         this.Current = default!;
                         return false;
                     }
 
-                    this.Current = _listEnumerator.Current;
+                    this.Current = _arrayEnumerator.Current;
+                    break;
+                case ManyStoreKind.Source:
+                    if (!_sourceEnumerator.MoveNext())
+                    {
+                        _finished = true;
+                        this.Current = default!;
+                        return false;
+                    }
+
+                    this.Current = _sourceEnumerator.Current;
                     break;
                 case ManyStoreKind.LeasedList:
                     if (!_leasedEnumerator.MoveNext())
@@ -478,17 +476,17 @@ public readonly struct Many<T> : IVariantDecomposable<Many<T>>, IForcedStaticaly
                 case ManyStoreKind.Empty:
                     _finished = true;
                     break;
-                case ManyStoreKind.Single:
-                    break;
                 case ManyStoreKind.Source:
-                    throw new NotSupportedException();
-                case ManyStoreKind.List:
-                    _listEnumerator.Dispose();
-                    _listEnumerator = _many._list!.GetEnumerator();
+                    _sourceEnumerator.Dispose();
+                    _sourceEnumerator = _many.AsSource.GetEnumerator();
+                    break;
+                case ManyStoreKind.Array:
+                    _arrayEnumerator.Dispose();
+                    _arrayEnumerator = new ArraySegment<T>(_many.AsArray).GetEnumerator();
                     break;
                 case ManyStoreKind.LeasedList:
                     _leasedEnumerator.Dispose();
-                    _leasedEnumerator = _many._leased!.GetEnumerator();
+                    _leasedEnumerator = _many.AsLeased.GetEnumerator();
                     break;
             }
             

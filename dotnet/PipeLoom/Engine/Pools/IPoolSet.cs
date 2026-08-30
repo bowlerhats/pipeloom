@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.Threading;
 using PipeLoom.Engine.Abstractions.Bundles;
+using PipeLoom.Engine.Abstractions.Bundles.ListSources;
 using PipeLoom.Engine.Bundles;
 
 namespace PipeLoom.Engine.Pools;
@@ -40,7 +41,7 @@ internal abstract class PoolSet : IPoolSet, IDisposable
             : field;
         protected set;
     }
-
+    
     private bool _disposed;
 
     protected PoolSet(PipeLoomEngine engine)
@@ -91,8 +92,14 @@ internal abstract class PoolSet : IPoolSet, IDisposable
     {
         return this.GetObjectPool<BundleState<T>>(MagicNumbers.BundleStatePoolSize);
     }
-    
-    
+
+    public IObjectPool<ReadOnlyBundle<T>> GetReadOnlyBundlePool<T>()
+    {
+        return this.GetObjectPool<ReadOnlyBundle<T>, PipeLoomEngine>(
+            this.Engine,
+            static (engine, _) => new ReadOnlyBundle<T>(engine),
+            MagicNumbers.ReadOnlyBundlePoolSize);
+    }
     
     protected void CheckDisposed()
     {

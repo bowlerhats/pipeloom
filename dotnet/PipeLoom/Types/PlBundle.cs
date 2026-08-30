@@ -22,26 +22,38 @@ public class PlGenericBundle : PlGenericType
         return new PlBundleOf(concreteType, this, arguments.Single(), this.Engine);
     }
 
-    public override IPlConverter BuildHomomorphicConverter<TSourceInner, TTargetInner>(ConverterBuilderParams builderParams)
+    public override IPlConverter? BuildHomomorphicConverter<TSourceInner, TTargetInner>(ConverterBuilderParams builderParams)
     {
-        var innerSourceType = this.Engine.TypeOf<TSourceInner>();
+        if (typeof(TSourceInner) == typeof(Variant))
+        {
+            return builderParams.Convertible
+                .FromRef<IBundle<Variant>>()
+                .ToRef<IBundle<TTargetInner>>()
+                .Using(static (_, v) => v.ConvertTo(static d => d.Unpack<TTargetInner>()));
+        }
+        
+        var sourceType = builderParams.SourceArgType;
         
         if (typeof(TTargetInner) == typeof(Variant))
         {
             return builderParams.Convertible
                 .FromRef<IBundle<TSourceInner>>()
                 .ToRef<IBundle<Variant>>()
-                .Using((_, v) => v.ConvertTo(innerSourceType, static (sType, d) => Variant.From(d, sType)));
+                .Using((_, v) => v.ConvertTo(sourceType, static (sType, d) => Variant.From(d, sType)));
         }
-        
-        var innerConverter = builderParams.InnerConverter;
 
+        var targetType = builderParams.TargetArgType;
+
+        var converter = this.Engine.Conversions.FindConverter(sourceType, targetType);
+        if (converter is null)
+            return null;
+        
         return builderParams.Convertible
             .FromRef<IBundle<TSourceInner>>()
             .ToRef<IBundle<TTargetInner>>()
             .Using((context, v) =>
             {
-                return v.ConvertTo((context, innerConverter, innerSourceType), Convert);
+                return v.ConvertTo((context, converter, sourceType), Convert);
 
                 static TTargetInner Convert((IWeaveContext context, IPlConverter innerConverter, PlTypeDef innerSourceType) state, TSourceInner source)
                 {

@@ -6,9 +6,11 @@ using System.Runtime.CompilerServices;
 
 namespace PipeLoom.Engine.Abstractions.Bundles;
 
+
 public interface IUnsafeSpanProvider<T>
 {
     ReadOnlySpan<T> UnsafeAsSpan();
+    ReadOnlyMemory<T> UnsafeAsMemory();
 }
 
 public interface IReadOnlyLeasedList<T> : IReadOnlyList<T>

@@ -17,8 +17,8 @@ public interface IBundle
     
     int ItemCount { get; }
     
-    bool Repartition(bool allowCollapse = false);
-    ValueTask<bool> RepartitionAsync(bool allowCollapse = false);
+    // bool Repartition(bool allowCollapse = false);
+    // ValueTask<bool> RepartitionAsync(bool allowCollapse = false);
     
     Variant PackAsVariant();
 }
@@ -39,8 +39,6 @@ public interface IBundle<T> : IBundle
     Many<T> Flatten();
 
     void Add(T item);
-    // void Add(T item, PartitionPath path);
-    // void Add(T item, params Variant[] path);
     bool TryAdd(T item);
     ValueTask AddAsync(T item);
     ValueTask<bool> TryAddAsync(T item);

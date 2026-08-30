@@ -9,6 +9,7 @@ namespace PipeLoom.Engine.Abstractions.Bundles;
 public sealed class PartitionPath : IEquatable<PartitionPath>, IPoolReturnable
 {
     public static readonly PartitionPath Default = new() { IsDefault = true };
+    internal static readonly PartitionPath[] InlineDefaultPathArray = [Default];
     
     private readonly Variant[] _keys;
 

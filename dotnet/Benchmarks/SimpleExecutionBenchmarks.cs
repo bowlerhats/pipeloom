@@ -18,7 +18,7 @@ public class SimpleExecutionBenchmarks
     [GlobalSetup]
     public async ValueTask GlobalSetup()
     {
-        _testNumbers = new int[10_000];
+        _testNumbers = new int[1];
         for (var i = 0; i < _testNumbers.Length; i++)
         {
             _testNumbers[i] = Random.Shared.Next(5);
@@ -26,12 +26,12 @@ public class SimpleExecutionBenchmarks
         
         _engine = PipeLoomBuilder.Create().Build();
         _plan = new WeavePlan(_engine);
-        _plan.RootNode.AppendOperator("sum").AppendValue(Many.Create(_testNumbers));
+        _plan.RootNode.AppendOperator("sum").AppendValue(Many.Wrap(_testNumbers));
         await _plan.Fuse<long>();
         
         _plan2 = new WeavePlan(_engine);
         var p2Pipe = _plan2.RootNode.AppendOperator("pipe");
-        p2Pipe.AppendValue(Many.Create(_testNumbers));
+        p2Pipe.AppendValue(Many.Wrap(_testNumbers));
         p2Pipe.AppendOperator("sum");
         await _plan2.Fuse<long>();
         

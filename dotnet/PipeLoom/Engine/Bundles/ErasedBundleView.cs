@@ -19,8 +19,8 @@ internal sealed class ErasedBundleView<T> : IErasedBundleView
     public Many<Variant> GetErasedLeaf(PartitionPath path)
     {
         var leaf = _bundle.GetLeaf(path);
-        
-        return _bundle.Context.Engine.Conversions.Convert<Many<T>, Many<Variant>>(_bundle.Context, leaf);
+
+        return leaf.ToVariantMany(_bundle.Context);
     }
 
     public void SetLeaf(PartitionPath path, Many<Variant> leaf)
@@ -55,7 +55,7 @@ internal sealed class ErasedBundleView<T> : IErasedBundleView
             res.Add(packed);
         }
 
-        return Many.Wrap(res);
+        return Many.Wrap([.. res]);
     }
 
     public void Add(Variant item)

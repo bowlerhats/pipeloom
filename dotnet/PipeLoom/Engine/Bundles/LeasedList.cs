@@ -349,4 +349,14 @@ public sealed class LeasedList<T> : ILeasedList<T>, IUnsafeSpanProvider<T>, IPoo
             return _store.AsSpan();
         }
     }
+    
+    ReadOnlyMemory<T> IUnsafeSpanProvider<T>.UnsafeAsMemory()
+    {
+        this.CheckBound();
+
+        lock (_lock)
+        {
+            return _store.AsMemory();
+        }
+    }
 }

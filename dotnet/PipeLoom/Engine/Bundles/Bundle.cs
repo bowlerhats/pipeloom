@@ -88,11 +88,15 @@ internal sealed class Bundle<T> : IBundle<T>, IPoolReturnable, ILatching<T>
 
     public void Unbind()
     {
+        var state = _state;
+        _state = null!;
+        
+        if (state != null!)
+            this.ReturnState(state);
         
         _statePool = null!;
         
         _context = null;
-        _state = null!;
     }
     
     public ReturnResult OnReturn(IObjectPool pool)
@@ -101,6 +105,28 @@ internal sealed class Bundle<T> : IBundle<T>, IPoolReturnable, ILatching<T>
         
         // todo: protect against id and version overflows, request drop if near limits
         return ReturnResult.Ok();
+    }
+
+    /// <summary>
+    /// Only ever use on pristine bundle! <br/>
+    /// It overrides the whole state including version,
+    /// it breaks all active latches and version checking
+    /// (because potentially overriding to the same version but differing state...)
+    /// </summary>
+    /// <remarks>
+    /// This method is equivalent to fast-forward to a version, just makes no checks and no guarantees <br/>
+    /// Primarily used as a fast path in <see cref="ReadOnlyBundle{T}"/> 
+    /// </remarks>
+    /// <param name="state"></param>
+    public void OverrideStateUnsafe(BundleState<T> state)
+    {
+        var oldState = _state;
+        _state = state;
+
+        if (oldState.IsReturnable)
+        {
+            oldState.Lease?.Dispose();
+        }
     }
     
     public BundleReadLatch<T> Latch()
@@ -222,20 +248,20 @@ internal sealed class Bundle<T> : IBundle<T>, IPoolReturnable, ILatching<T>
 
     public Many<T> SetLeaf(PartitionPath path, T singularLeaf)
     {
-        return this.SetLeaf(path, Many.Single(singularLeaf));
+        return this.SetLeaf(path, Many.Single(singularLeaf, this.Context));
     }
 
-    public bool Repartition(bool allowCollapse = false)
-    {
-        this.CheckBound();
-        throw new NotImplementedException();
-    }
-
-    public ValueTask<bool> RepartitionAsync(bool allowCollapse = false)
-    {
-        this.CheckBound();
-        throw new NotImplementedException();
-    }
+    // public bool Repartition(bool allowCollapse = false)
+    // {
+    //     this.CheckBound();
+    //     throw new NotImplementedException();
+    // }
+    //
+    // public ValueTask<bool> RepartitionAsync(bool allowCollapse = false)
+    // {
+    //     this.CheckBound();
+    //     throw new NotImplementedException();
+    // }
 
     public Variant PackAsVariant()
     {
@@ -246,8 +272,16 @@ internal sealed class Bundle<T> : IBundle<T>, IPoolReturnable, ILatching<T>
     public IReadOnlyBundle<T> AsReadOnly()
     {
         this.CheckBound();
+
+        var pool = this.Context.Pools.GetReadOnlyBundlePool<T>();
+        var lease = pool.Lease();
+        var res = lease.Item;
+        res.Bind(this.Context, lease);
+
+        var state = this.ShareState();
+        res.SetStateUnsafe(state);
         
-        throw new NotImplementedException();
+        return res;
     }
 
     public Many<T> Flatten()
@@ -286,7 +320,7 @@ internal sealed class Bundle<T> : IBundle<T>, IPoolReturnable, ILatching<T>
             
             Debug.Assert(pos == itemCount);
             
-            return Many.Create(buffer.AsSpan(0, itemCount));
+            return Many.Create(buffer.AsSpan(0, itemCount), this.Context);
         }
         finally
         {
@@ -514,6 +548,28 @@ internal sealed class Bundle<T> : IBundle<T>, IPoolReturnable, ILatching<T>
         } while (needsCopy);
 
         return settled;
+    }
+
+    public BundleState<T> ShareState()
+    {
+        BundleState<T> state;
+        var lockTaken = false;
+        try
+        {
+            _stateLock.Enter(ref lockTaken);
+
+            state = _state;
+            
+            state.IsMutating = false;
+            state.WasShared = true;
+        }
+        finally
+        {
+            if (lockTaken)
+                _stateLock.Exit(false);
+        }
+
+        return state;
     }
 
     public IBundle<TOther> ConvertTo<TOther>(Func<T, TOther> converterFunc)

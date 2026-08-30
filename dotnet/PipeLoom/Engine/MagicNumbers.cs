@@ -13,8 +13,10 @@ internal static class MagicNumbers
     public const int StepStatePoolSize = 16;
     public const int BundleStatePoolSize = 32;
     public const int BundlePoolSize = 32;
+    public const int ReadOnlyBundlePoolSize = 32;
     public const int PartitionPathPoolSize = 128;
     public const int LeasedListPoolSize = 16;
+    public const int SingleItemSourcePoolSize = 128;
     
     public const int VariantBundlePoolsize = 64;
 

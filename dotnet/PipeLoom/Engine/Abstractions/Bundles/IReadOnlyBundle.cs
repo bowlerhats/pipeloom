@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿using System;
 
 namespace PipeLoom.Engine.Abstractions.Bundles;
 
@@ -6,18 +6,27 @@ public interface IReadOnlyBundle
 {
     IWeaveContext Context { get; }
     
-    IErasedReadOnlyBundleView Erased { get; }
+    PlTypeDef ItemType { get; }
+    PlTypeDef LeafType { get; }
     
-    IReadOnlyList<PartitionPath> Paths { get; }
+    int PartitionCount { get; }
+    
+    // IErasedReadOnlyBundleView Erased { get; }
+
+    Variant GetLeafAsPackedToVariant(PartitionPath path);
+    
+    ReadOnlyMemory<PartitionPath> Paths { get; }
     
     Variant PackAsVariant();
 }
 
 public interface IReadOnlyBundle<T> : IReadOnlyBundle
 {
-    IBundlePartitions<T> Partitions { get; }
+    // ReadOnlyMemory<BundlePartitionEntry<T>> Partitions { get; }
+    
+    // IReadOnlyList<BundlePartitionEntry<T>> Partitions { get; }
 
-    Many<T> Flatten();
+    // Many<T> Flatten();
 
     IBundle<T> Mutate();
 }

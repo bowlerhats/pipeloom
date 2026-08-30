@@ -30,7 +30,7 @@ public sealed class PlGenericMany : PlGenericType
         return new PlManyOf(concreteType, this, arguments.Single(), this.Engine);
     }
 
-    public override IPlConverter BuildHomomorphicConverter<TSourceInner, TTargetInner>(ConverterBuilderParams builderParams)
+    public override IPlConverter? BuildHomomorphicConverter<TSourceInner, TTargetInner>(ConverterBuilderParams builderParams)
     {
         if (typeof(TTargetInner) == typeof(Variant))
         {
@@ -39,17 +39,28 @@ public sealed class PlGenericMany : PlGenericType
                 .ToValue<Many<Variant>>()
                 .Using(static (context, in v) => v.ToVariantMany(context));
         }
-        
-        var innerConverter = builderParams.InnerConverter;
 
-        var innerSourceType = this.Engine.TypeOf<TSourceInner>();
+        if (typeof(TSourceInner) == typeof(Variant))
+        {
+            return builderParams.Convertible
+                .FromValue<Many<Variant>>()
+                .ToValue<Many<TTargetInner>>()
+                .Using(static (context, in v) => v.ConvertTo(context, static c => c.Unpack<TTargetInner>()));
+        }
+
+        var sourceType = builderParams.SourceArgType;
+        var targetType = builderParams.TargetArgType;
+        
+        var converter = this.Engine.Conversions.FindConverter(sourceType, targetType);
+        if (converter is null)
+            return null;
         
         return builderParams.Convertible
             .FromValue<Many<TSourceInner>>()
             .ToValue<Many<TTargetInner>>()
             .Using((context, in v) =>
             {
-                return v.ConvertTo(context, (context, innerConverter, innerSourceType), Convert);
+                return v.ConvertTo(context, (context, converter, sourceType), Convert);
 
                 static TTargetInner Convert((IWeaveContext context, IPlConverter converter, PlTypeDef innerSourceType) state, TSourceInner input)
                 {

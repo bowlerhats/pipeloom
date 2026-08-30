@@ -1,6 +1,7 @@
 ﻿using System;
 using PipeLoom.Engine.Abstractions;
 using PipeLoom.Engine.Abstractions.Bundles;
+using PipeLoom.Engine.Abstractions.Bundles.ListSources;
 using PipeLoom.Engine.Pools;
 
 namespace PipeLoom.Engine.Bundles;
@@ -10,7 +11,7 @@ internal sealed class BundleFactory : IBundleFactory, IPoolReturnable
     private WeaveContext? _context;
 
     private WeaveContext Context => _context ?? throw new ArgumentNullException();
-
+    
     public void Bind(WeaveContext context)
     {
         _context = context;
@@ -39,10 +40,18 @@ internal sealed class BundleFactory : IBundleFactory, IPoolReturnable
             throw;
         }
     }
-
+    
     public LeasedList<T> LeaseList<T>()
     {
         return LeasedList<T>.Lease(this.Context);
+    }
+
+    public SingleItemSource<T> SingleItemSource<T>()
+    {
+        var pool = this.Context.Pools.GetObjectPool<SingleItemSource<T>>(MagicNumbers.SingleItemSourcePoolSize);
+        var lease = pool.Lease();
+
+        return lease.Item;
     }
 
     public ReturnResult OnReturn(IObjectPool _)

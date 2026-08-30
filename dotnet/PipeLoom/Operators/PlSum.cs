@@ -1,7 +1,5 @@
-﻿using System;
-using System.Numerics.Tensors;
+﻿using System.Numerics.Tensors;
 using PipeLoom.Engine.Abstractions;
-using PipeLoom.Engine.Abstractions.Bundles;
 using PipeLoom.Engine.Abstractions.Registration;
 
 namespace PipeLoom.Operators;
@@ -20,7 +18,7 @@ public class PlSum : PlOperatorClass
         // todo: bugged registration order, overshadowed by long reducer
         // registrator.AsUnary<int>().Reducer(Sum);
         
-        registrator.AsUnary<IBundle<long>>().Function(BundleSum);
+        //registrator.AsUnary<IBundle<long>>().Function(BundleSum);
     }
 
     private static long Sum(Many<long> items)
@@ -33,14 +31,14 @@ public class PlSum : PlOperatorClass
     //     return items.Length != 0 ? TensorPrimitives.Sum(items.AsSpan()) : 0;
     // }
     
-    private static long BundleSum(IBundle<long> bundle)
-    {
-        var res = 0L;
-        foreach (var partition in bundle.Partitions)
-        {
-            res += TensorPrimitives.Sum(partition.Leaf.AsSpan());
-        }
-
-        return res;
-    }
+    // private static long BundleSum(IBundle<long> bundle)
+    // {
+    //     var res = 0L;
+    //     foreach (var partition in bundle.Partitions)
+    //     {
+    //         res += TensorPrimitives.Sum(partition.Leaf.AsSpan());
+    //     }
+    //
+    //     return res;
+    // }
 }

@@ -9,7 +9,7 @@ using PipeLoom.Engine.TypeConversions;
 
 namespace PipeLoom.Types.Abstractions;
 
-public abstract class PlGenericType : PlTypeDef, IDoubleDispatchCallback<PlConverter>
+public abstract class PlGenericType : PlTypeDef, IDoubleDispatchCallback<PlConverter?>
 {
     public sealed override Type NativeType { get; }
     public sealed override PlTypeCardinality Cardinality => PlTypeCardinality.Unknown;
@@ -49,11 +49,12 @@ public abstract class PlGenericType : PlTypeDef, IDoubleDispatchCallback<PlConve
         return def;
     }
     
-    internal PlConverter MakeGenericConverter(PlTypeDef sourceArgType, PlTypeDef targetArgType, IPlConverter innerConverter, ConverterRegistrator convertible)
+    internal PlConverter? MakeGenericConverter(PlTypeDef sourceArgType, PlTypeDef targetArgType,  ConverterRegistrator convertible)
     {
         var p = new ConverterBuilderParams
         {
-            InnerConverter = innerConverter,
+            SourceArgType = sourceArgType,
+            TargetArgType = targetArgType,
             Convertible = convertible
         };
         
@@ -80,14 +81,14 @@ public abstract class PlGenericType : PlTypeDef, IDoubleDispatchCallback<PlConve
         return res;
     }
 
-    PlConverter IDoubleDispatchCallback<PlConverter>.Dispatch<T, U>(object? state)
+    PlConverter? IDoubleDispatchCallback<PlConverter?>.Dispatch<T, U>(object? state)
     {
         ArgumentNullException.ThrowIfNull(state);
         
-        return (PlConverter)this.BuildHomomorphicConverter<T, U>((ConverterBuilderParams)state);
+        return this.BuildHomomorphicConverter<T, U>((ConverterBuilderParams)state) as PlConverter;
     }
 
-    public virtual IPlConverter BuildHomomorphicConverter<TSourceInner, TTargetInner>(ConverterBuilderParams builderParams)
+    public virtual IPlConverter? BuildHomomorphicConverter<TSourceInner, TTargetInner>(ConverterBuilderParams builderParams)
     {
         throw new NotSupportedException($"{this.Name} does not support generic conversions");
     }
@@ -99,7 +100,8 @@ public abstract class PlGenericType : PlTypeDef, IDoubleDispatchCallback<PlConve
 
     public sealed class ConverterBuilderParams
     {
-        public required IPlConverter InnerConverter { get; init; }
+        public required PlTypeDef SourceArgType { get; init; }
+        public required PlTypeDef TargetArgType { get; init; }
         public required ConverterRegistrator Convertible { get; init; }
     }
 }

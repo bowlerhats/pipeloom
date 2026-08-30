@@ -107,7 +107,7 @@ internal static class CoreNumberConverters
         switch (input.Length)
         {
             case 0: return Many.Empty<TOutput>();
-            case 1: return Many.Single(TOutput.CreateChecked(input[0]));
+            case 1: return Many.Single(TOutput.CreateChecked(input[0]), context);
         }
         
         var pool = context.Pools.GetArrayPool<TOutput>();

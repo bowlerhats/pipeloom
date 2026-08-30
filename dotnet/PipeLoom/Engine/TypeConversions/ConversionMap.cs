@@ -21,6 +21,8 @@ internal sealed class ConversionMap : IPlConversionMap
     private ConcurrentDictionary<ulong, ImmutableList<PlConverter>> _converters = [];
 
     private ConcurrentDictionary<ulong, PlConverter> _cached = [];
+
+    private ConcurrentDictionary<ulong, bool> _declinedConverters = [];
     
     public ConversionMap(PipeLoomEngine engine)
     {
@@ -266,20 +268,36 @@ internal sealed class ConversionMap : IPlConversionMap
             return null;
         
         var key = PlTypeDef.CombineIds(source, target);
+        if (_declinedConverters.ContainsKey(key))
+            return null;
+        
         if (_converters.TryGetValue(key, out var converters) && !converters.IsEmpty)
         {
             return converters.Last();
         }
-
+        
         if (gSource.GenericType == gTarget.GenericType)
         {
-            return this.CreateHomomorphicConverter(
+            var hMorphic = this.CreateHomomorphicConverter(
                 gSource.GenericType,
                 gSource.GenericArguments[0],
                 gTarget.GenericArguments[0]);
+            
+            if (hMorphic is null)
+            {
+                _declinedConverters[key] = true;
+            }
+
+            return hMorphic;
         }
 
-        return this.CreateLiftedGenericConverter(gSource, gTarget);
+        var lifted = this.CreateLiftedGenericConverter(gSource, gTarget);
+        if (lifted is null)
+        {
+            _declinedConverters[key] = true;
+        }
+
+        return lifted;
     }
 
     private PlConverter? CreateHomomorphicConverter(
@@ -291,16 +309,9 @@ internal sealed class ConversionMap : IPlConversionMap
         if (!genericType.SupportsHomomorphicConversion)
             return null;
 
-        if (!sourceArg.IsConvertibleTo(targetArg))
-            return null;
-        
-        var innerKey = PlTypeDef.CombineIds(sourceArg, targetArg);
-        if (!_cached.TryGetValue(innerKey, out var innerConverter))
-            return null;
-
         var reg = new ConverterRegistrator(_engine);
         
-        return genericType.MakeGenericConverter(sourceArg, targetArg, innerConverter, reg);
+        return genericType.MakeGenericConverter(sourceArg, targetArg, reg);
     }
 
     private PlConverter? CreateLiftedGenericConverter(IPlConstructed gSource, IPlConstructed gTarget)

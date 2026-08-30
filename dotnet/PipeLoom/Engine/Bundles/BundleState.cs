@@ -39,6 +39,8 @@ internal sealed class BundleState<T> : IPoolReturnable
 
     public ReadOnlySpan<PartitionLevel> ActiveLevels => Levels.AsSpan(0, LevelCount);
 
+    public bool IsReturnable => !WasShared && !IsMutating && ActiveLatches <= 0;
+
     public bool HasPartitions => LevelCount > 0;
     
     public void Bind(WeaveContext context)

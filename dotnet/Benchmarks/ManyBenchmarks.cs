@@ -33,11 +33,8 @@ public class ManyBenchmarks
         
         _context = new WeaveContext(_engine);
 
-        var pureList = new List<int>(_testNumbers.Length);
-        pureList.AddRange(_testNumbers);
-        
-        _manyList = Many.Wrap(pureList);
-        if (_manyList.AsEnumerable() is not List<int>)
+        _manyList = Many.Wrap(_testNumbers);
+        if (_manyList.AsEnumerable() is not int[])
             throw new PipeLoomException("Expected leased list backing");
 
         _manyLeased = Many.Create(_testNumbers, _context);

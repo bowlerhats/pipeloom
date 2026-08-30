@@ -5,10 +5,12 @@ public interface IPlWellknown
     PlVariant Variant { get; }
     PlVoid Void { get; }
     
-    PlBundle Bundle { get; }
+    // PlBundle Bundle { get; }
+    
+    // PlReadOnlyBundleOf ReadOnlyBundleOfVariant { get; }
     // PlMany Many { get; }
     
-    PlMany ManyOfVariant { get; }
+    // PlManyOf ManyOfVariant { get; }
     
     //PlNever Never { get; }
 }
