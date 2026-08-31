@@ -10,7 +10,9 @@ internal class Program
 {
     private static async Task Main()
     {
-        var engine = PipeLoomBuilder.Create().Build();
+        var engine = PipeLoomBuilder.Create()
+            .AddCoreMath()
+            .Build();
 
         using var plan = new WeavePlan(engine);
         plan.RootNode.AppendOperator("log").AppendValue("TEST");

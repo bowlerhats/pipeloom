@@ -24,7 +24,10 @@ public class SimpleExecutionBenchmarks
             _testNumbers[i] = Random.Shared.Next(5);
         }
         
-        _engine = PipeLoomBuilder.Create().Build();
+        _engine = PipeLoomBuilder.Create()
+            .AddCoreMath()
+            .Build();
+        
         _plan = new WeavePlan(_engine);
         _plan.RootNode.AppendOperator("sum").AppendValue(Many.Wrap(_testNumbers));
         await _plan.Fuse<long>();

@@ -37,10 +37,27 @@ public abstract class PipeLoomBuilder<TSelf> : IEngineConfig
 
     protected TSelf Self => (TSelf)(object)this;
 
+    public HashSet<string> RegisteredTokens { get; } = [];
+
     public abstract PipeLoomEngine Build();
 
-    public virtual TSelf AddCoreTypes()
+    public bool IsRegistered(string token)
     {
+        return this.RegisteredTokens.Contains(token);
+    }
+    
+    public TSelf Registered(string token)
+    {
+        this.RegisteredTokens.Add(token);
+        return this.Self;
+    }
+
+    protected virtual TSelf AddCoreTypes()
+    {
+        const string regToken = "core.types";
+        if (this.IsRegistered(regToken))
+            return this.Self;
+        
         this.AddType(engine => new PlVariant(engine));
         this.AddType(engine => new PlVoid(engine));
         
@@ -53,23 +70,17 @@ public abstract class PipeLoomBuilder<TSelf> : IEngineConfig
         this.AddType(engine => new PlText(engine));
         this.AddType(engine => new PlBool(engine));
         
-        this.AddType(engine => new PlByte(engine));
-        this.AddType(engine => new PlShort(engine));
-        this.AddType(engine => new PlInteger(engine));
-        this.AddType(engine => new PlLong(engine));
-        
-        this.AddType(engine => new PlUshort(engine));
-        this.AddType(engine => new PlUint(engine));
-        this.AddType(engine => new PlUlong(engine));
-        
-        this.AddType(engine => new PlDouble(engine));
-        this.AddType(engine => new PlDecimal(engine));
+        this.Registered(regToken);
         
         return this.Self;
     }
 
-    public virtual TSelf AddCoreOperators()
+    protected virtual TSelf AddCoreOperators()
     {
+        const string regToken = "core.operators";
+        if (this.IsRegistered(regToken))
+            return this.Self;
+        
         this.AddOperatorClass(d => new PlOpConstant(d));
         this.AddOperatorClass(d => new PlOpLog(d));
         
@@ -79,15 +90,20 @@ public abstract class PipeLoomBuilder<TSelf> : IEngineConfig
         this.AddOperatorClass(d => new PlOpIsNull(d));
         this.AddOperatorClass(d => new PlOpIsNotNull(d));
         
-        this.AddOperatorClass(d => new PlSum(d));
+        this.Registered(regToken);
         
         return this.Self;
     }
 
-    public virtual TSelf AddCoreConverters()
+    protected virtual TSelf AddCoreConverters()
     {
-        this.AddConverters(CoreNumberConverters.AddStandardNumberConverters);
-        this.AddConverters(CoreNumberConverters.AddTensorConverters);
+        const string regToken = "core.converters";
+        if (this.IsRegistered(regToken))
+            return this.Self;
+        
+        
+
+        this.Registered(regToken);
         
         return this.Self;
     }
