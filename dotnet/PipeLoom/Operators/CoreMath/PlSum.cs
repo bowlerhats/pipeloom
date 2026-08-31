@@ -2,7 +2,7 @@
 using PipeLoom.Engine.Abstractions;
 using PipeLoom.Engine.Abstractions.Registration;
 
-namespace PipeLoom.Operators;
+namespace PipeLoom.Operators.CoreMath;
 
 public class PlSum : PlOperatorClass
 {

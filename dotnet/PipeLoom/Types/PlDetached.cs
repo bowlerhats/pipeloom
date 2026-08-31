@@ -35,7 +35,9 @@ public sealed class PlDetached : PlTypeDef, IPlConstructed<PlGenericDetached>, I
     public override string Name { get; }
     public override PlTypeCardinality Cardinality => PlTypeCardinality.Unknown;
     public override bool IsFloating => false;
-    
+
+    public override PlTypeDef ResolvesTo => this.InnerType;
+
     public override Type NativeType { get; }
     public PlGenericDetached GenericType { get; }
     public IReadOnlyList<PlTypeDef> GenericArguments { get; }

@@ -26,6 +26,7 @@ public class SimpleExecutionBenchmarks
         
         _engine = PipeLoomBuilder.Create()
             .AddCoreMath()
+            .AddCoreControlFlow()
             .Build();
         
         _plan = new WeavePlan(_engine);

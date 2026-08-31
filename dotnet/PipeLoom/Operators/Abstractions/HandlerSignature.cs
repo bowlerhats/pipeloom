@@ -62,7 +62,7 @@ public sealed class HandlerSignature: IEquatable<HandlerSignature>
             // has different shape
             return false;
         }
-        
+
         if (other.ReturnType.Id != this.ReturnType.Id && !other.ReturnType.IsConvertibleTo(this.ReturnType))
             return false;
 
@@ -70,12 +70,20 @@ public sealed class HandlerSignature: IEquatable<HandlerSignature>
         {
             var myArg = this.ArgumentTypes[i];
             var otherArg = other.ArgumentTypes[i];
-            
-            if (myArg.Id != otherArg.Id && !myArg.IsConvertibleTo(otherArg))
+
+            if (!ArgumentFits(myArg, myArg.ResolvesTo, otherArg, otherArg.ResolvesTo))
                 return false;
         }
 
         return true;
+    }
+
+    private static bool ArgumentFits(PlTypeDef from, PlTypeDef fromResolved, PlTypeDef to, PlTypeDef toResolved)
+    {
+        return from.IsConvertibleTo(to)
+               || from.IsConvertibleTo(toResolved)
+               || fromResolved.IsConvertibleTo(to)
+               || fromResolved.IsConvertibleTo(toResolved);
     }
 
     public bool IsStrictSubSetOf(HandlerSignature other)

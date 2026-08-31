@@ -1,7 +1,7 @@
 ﻿using PipeLoom.Engine.Abstractions;
 using PipeLoom.Engine.Abstractions.Registration;
 
-namespace PipeLoom.Operators;
+namespace PipeLoom.Operators.Core;
 
 public class PlOpIsNull : PlOperatorClass
 {

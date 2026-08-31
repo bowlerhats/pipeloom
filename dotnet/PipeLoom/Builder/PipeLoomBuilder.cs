@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using PipeLoom.Engine;
 using PipeLoom.Engine.Abstractions;
 using PipeLoom.Engine.Abstractions.Registration;
+using PipeLoom.Operators.Core;
+using PipeLoom.Operators.CoreControlFlow;
 using PipeLoom.Types.Scalars;
 using PipeLoom.Types.Scalars.Numerical;
 
@@ -85,7 +87,6 @@ public abstract class PipeLoomBuilder<TSelf> : IEngineConfig
         this.AddOperatorClass(d => new PlOpLog(d));
         
         this.AddOperatorClass(d => new PlOpSequence(d));
-        this.AddOperatorClass(d => new PlOpPipe(d));
         
         this.AddOperatorClass(d => new PlOpIsNull(d));
         this.AddOperatorClass(d => new PlOpIsNotNull(d));

@@ -28,6 +28,8 @@ public abstract class PlTypeDef
 
     public Variant DefaultValue => _defaultValue ??= this.GetDefaultValue();
 
+    public virtual PlTypeDef ResolvesTo => this;
+
     internal int[] Superset
     {
         get;

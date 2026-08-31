@@ -1,6 +1,6 @@
 ﻿using PipeLoom.Engine.Abstractions;
 
-namespace PipeLoom.Operators;
+namespace PipeLoom.Operators.Core;
 
 internal sealed class PlDynamicOpClass : PlOperatorClass
 {

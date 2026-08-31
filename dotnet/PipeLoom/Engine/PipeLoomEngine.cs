@@ -166,8 +166,13 @@ public class PipeLoomEngine : IPipeLoomEngine
     public PlTypeDef CommonBaseOf(IEnumerable<PlTypeDef> types)
     {
         this.CheckDisposed();
-        
-        throw new NotImplementedException();
+
+        if (!this.TypeMap.TryGetClosestCommonAncestor(types, out var common))
+        {
+            return this.WellKnown.Variant;
+        }
+
+        return common;
     }
 
     public PlOperatorArity? GuessArity(IEnumerable<PlTypeDef> args)

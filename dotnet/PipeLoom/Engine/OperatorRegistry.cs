@@ -5,6 +5,7 @@ using System.Linq;
 using PipeLoom.Engine.Abstractions;
 using PipeLoom.Engine.Abstractions.Errors;
 using PipeLoom.Engine.Abstractions.Registration;
+using PipeLoom.Operators.Core;
 
 namespace PipeLoom.Engine;
 

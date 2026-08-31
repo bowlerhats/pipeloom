@@ -6,7 +6,7 @@ using PipeLoom.Engine.Abstractions;
 using PipeLoom.Engine.Abstractions.Registration;
 using PipeLoom.Operators.Abstractions.Handlers;
 
-namespace PipeLoom.Operators;
+namespace PipeLoom.Operators.CoreControlFlow;
 
 public sealed class PlOpPipe : PlOperatorClass
 {

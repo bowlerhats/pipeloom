@@ -302,12 +302,12 @@ internal sealed class TypeMap
             if (_typeDefsByType.TryGetValue(tBase, out var super)
                 || _discoveredTypeDefsByType.TryGetValue(tBase, out super))
             {
-                superset[superPos] = super.Id;
+                superset[superPos++] = super.Id;
             }
 
             tBase = tBase.BaseType;
                 
-            if (++superPos >= MagicNumbers.MaxSubsetPath)
+            if (superPos >= MagicNumbers.MaxSubsetPath)
             {
                 throw new PipeLoomException($"Initial type hierarchy cannot be deeper then {MagicNumbers.MaxSubsetPath} levels");
             }
@@ -319,7 +319,7 @@ internal sealed class TypeMap
         }
     }
 
-    private bool TryGetClosestCommonAncestor(IEnumerable<PlTypeDef> over, [MaybeNullWhen(false)] out PlTypeDef common)
+    public bool TryGetClosestCommonAncestor(IEnumerable<PlTypeDef> over, [MaybeNullWhen(false)] out PlTypeDef common)
     {
         common = null;
         

@@ -1,4 +1,7 @@
-﻿using PipeLoom.Types.Scalars;
+﻿using PipeLoom.Operators.CoreControlFlow;
+using PipeLoom.Operators.CoreLogic;
+using PipeLoom.Operators.CoreMath;
+using PipeLoom.Types.Scalars;
 using PipeLoom.Types.Scalars.Numerical;
 
 namespace PipeLoom.Builder;
@@ -22,7 +25,6 @@ public static class CorePackages
             builder.AddConverters(CoreNumberConverters.AddTensorConverters);
         
             builder.Registered(regToken);
-        
             return builder;
         }
 
@@ -37,7 +39,6 @@ public static class CorePackages
             builder.AddOperatorClass(d => new PlSum(d));
         
             builder.Registered(regToken);
-        
             return builder;
         }
 
@@ -61,7 +62,6 @@ public static class CorePackages
             builder.AddConverters(CoreNumberConverters.AddExtendedTensorConverters);
 
             builder.Registered(regToken);
-            
             return builder;
         }
         
@@ -77,7 +77,32 @@ public static class CorePackages
             builder.AddOperatorClass(engine => new PlSumExtended(engine));
             
             builder.Registered(regToken);
+            return builder;
+        }
 
+        public TBuilder AddCoreLogic()
+        {
+            const string regToken = "core.logic";
+            if (builder.IsRegistered(regToken))
+                return builder;
+
+            builder.AddOperatorClass(engine => new PlOpOr(engine));
+            builder.AddOperatorClass(engine => new PlOpAnd(engine));
+            
+            builder.Registered(regToken);
+            return builder;
+        }
+
+        public TBuilder AddCoreControlFlow()
+        {
+            const string regToken = "core.controlflow";
+            if (builder.IsRegistered(regToken))
+                return builder;
+
+            builder.AddOperatorClass(d => new PlOpPipe(d));
+            builder.AddOperatorClass(engine => new PlOpIf(engine));
+            
+            builder.Registered(regToken);
             return builder;
         }
     }

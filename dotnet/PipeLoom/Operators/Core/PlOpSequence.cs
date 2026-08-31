@@ -7,7 +7,7 @@ using PipeLoom.Engine.Abstractions.Errors;
 using PipeLoom.Engine.Abstractions.Registration;
 using PipeLoom.Operators.Abstractions.Handlers;
 
-namespace PipeLoom.Operators;
+namespace PipeLoom.Operators.Core;
 
 public sealed class PlOpSequence : PlOperatorClass
 {
