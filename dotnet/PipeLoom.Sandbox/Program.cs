@@ -11,7 +11,7 @@ internal class Program
     private static async Task Main()
     {
         var engine = PipeLoomBuilder.Create()
-            .AddCoreMath()
+            .AddExtendedMath()
             .Build();
 
         using var plan = new WeavePlan(engine);
@@ -23,11 +23,11 @@ internal class Program
         //plan.RootNode.AppendValue((decimal)1.33);
         
         var pipe = plan.RootNode.AppendOperator("pipe");
-        pipe.AppendValue(Many.Wrap<short>([1, 2, 3]));
+        pipe.AppendValue(Many.Wrap<ulong>([1, 2, 3]));
         pipe.AppendOperator("sum");
             //.AppendValue(new Many<short>([1, 2, 3]));
         
-        var res = await engine.Execute<decimal>(plan);
+        var res = await engine.Execute<ulong>(plan);
         
         Console.WriteLine(res);
         

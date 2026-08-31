@@ -11,15 +11,52 @@ internal static class CoreNumberConverters
     public static void AddStandardNumberConverters(ConverterRegistrator convertible)
     {
         // widening based on IEEE-754
-        // only for widely used types to balance noise/utility 
+        // only for frequently used types to balance noise/utility 
         
+        //NativeConverter<byte, short>(in convertible);
+        //NativeConverter<byte, ushort>(in convertible);
+        NativeConverter<byte, int>(in convertible);
+        //NativeConverter<byte, uint>(in convertible);
+        NativeConverter<byte, long>(in convertible);
+        //NativeConverter<byte, ulong>(in convertible);
+        NativeConverter<byte, double>(in convertible);
+        // NativeConverter<byte, decimal>(in convertible);
+        
+        // NativeConverter<short, int>(in convertible);
+        // NativeConverter<short, long>(in convertible);
+        // NativeConverter<short, double>(in convertible);
+        // NativeConverter<short, decimal>(in convertible);
+        
+        // NativeConverter<ushort, int>(in convertible);
+        // NativeConverter<ushort, uint>(in convertible);
+        // NativeConverter<ushort, long>(in convertible);
+        // NativeConverter<ushort, ulong>(in convertible);
+        // NativeConverter<ushort, double>(in convertible);
+        // NativeConverter<ushort, decimal>(in convertible);
+        
+        NativeConverter<int, long>(in convertible);
+        NativeConverter<int, double>(in convertible);
+        // NativeConverter<int, decimal>(in convertible);
+        
+        // NativeConverter<uint, long>(in convertible);
+        // NativeConverter<uint, ulong>(in convertible);
+        // NativeConverter<uint, double>(in convertible);
+        // NativeConverter<uint, decimal>(in convertible);
+        
+        // NativeConverter<long, decimal>(in convertible);
+        
+        // NativeConverter<ulong, decimal>(in convertible);
+    }
+
+    public static void AddExtendedNumberConverters(ConverterRegistrator convertible)
+    {
         NativeConverter<byte, short>(in convertible);
         NativeConverter<byte, ushort>(in convertible);
-        NativeConverter<byte, int>(in convertible);
+        // NativeConverter<byte, int>(in convertible);
         NativeConverter<byte, uint>(in convertible);
-        NativeConverter<byte, long>(in convertible);
+        // NativeConverter<byte, long>(in convertible);
         NativeConverter<byte, ulong>(in convertible);
-        NativeConverter<byte, double>(in convertible);
+        // NativeConverter<byte, double>(in convertible);
         NativeConverter<byte, decimal>(in convertible);
         
         NativeConverter<short, int>(in convertible);
@@ -34,8 +71,8 @@ internal static class CoreNumberConverters
         NativeConverter<ushort, double>(in convertible);
         NativeConverter<ushort, decimal>(in convertible);
         
-        NativeConverter<int, long>(in convertible);
-        NativeConverter<int, double>(in convertible);
+        // NativeConverter<int, long>(in convertible);
+        // NativeConverter<int, double>(in convertible);
         NativeConverter<int, decimal>(in convertible);
         
         NativeConverter<uint, long>(in convertible);
@@ -50,13 +87,41 @@ internal static class CoreNumberConverters
 
     public static void AddTensorConverters(ConverterRegistrator convertible)
     {
+        // TensorConverter<byte, short>(in convertible);
+        // TensorConverter<byte, ushort>(in convertible);
+        TensorConverter<byte, int>(in convertible);
+        // TensorConverter<byte, uint>(in convertible);
+        TensorConverter<byte, long>(in convertible);
+        // TensorConverter<byte, ulong>(in convertible);
+        TensorConverter<byte, double>(in convertible);
+        
+        // TensorConverter<short, int>(in convertible);
+        // TensorConverter<short, long>(in convertible);
+        // TensorConverter<short, double>(in convertible);
+        //
+        // TensorConverter<ushort, int>(in convertible);
+        // TensorConverter<ushort, uint>(in convertible);
+        // TensorConverter<ushort, long>(in convertible);
+        // TensorConverter<ushort, ulong>(in convertible);
+        // TensorConverter<ushort, double>(in convertible);
+        
+        TensorConverter<int, long>(in convertible);
+        TensorConverter<int, double>(in convertible);
+        
+        // TensorConverter<uint, long>(in convertible);
+        // TensorConverter<uint, ulong>(in convertible);
+        // TensorConverter<uint, double>(in convertible);
+    }
+
+    public static void AddExtendedTensorConverters(ConverterRegistrator convertible)
+    {
         TensorConverter<byte, short>(in convertible);
         TensorConverter<byte, ushort>(in convertible);
-        TensorConverter<byte, int>(in convertible);
+        // TensorConverter<byte, int>(in convertible);
         TensorConverter<byte, uint>(in convertible);
-        TensorConverter<byte, long>(in convertible);
+        // TensorConverter<byte, long>(in convertible);
         TensorConverter<byte, ulong>(in convertible);
-        TensorConverter<byte, double>(in convertible);
+        // TensorConverter<byte, double>(in convertible);
         
         TensorConverter<short, int>(in convertible);
         TensorConverter<short, long>(in convertible);
@@ -68,8 +133,8 @@ internal static class CoreNumberConverters
         TensorConverter<ushort, ulong>(in convertible);
         TensorConverter<ushort, double>(in convertible);
         
-        TensorConverter<int, long>(in convertible);
-        TensorConverter<int, double>(in convertible);
+        // TensorConverter<int, long>(in convertible);
+        // TensorConverter<int, double>(in convertible);
         
         TensorConverter<uint, long>(in convertible);
         TensorConverter<uint, ulong>(in convertible);

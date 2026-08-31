@@ -42,3 +42,23 @@ public class PlSum : PlOperatorClass
     //     return res;
     // }
 }
+
+public class PlSumExtended : PlSum
+{
+    public PlSumExtended(IPipeLoomEngine engine)
+        : base(engine)
+    {
+    }
+
+    public override void RegisterHandlers(PlOperatorRegistrator registrator)
+    {
+        base.RegisterHandlers(registrator);
+
+        registrator.AsUnary<ulong>().Reducer(Sum);
+    }
+    
+    private static ulong Sum(Many<ulong> items)
+    {
+        return items.Length != 0 ? TensorPrimitives.Sum(items.AsSpan()) : 0;
+    }
+}

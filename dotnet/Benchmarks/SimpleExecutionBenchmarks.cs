@@ -18,7 +18,7 @@ public class SimpleExecutionBenchmarks
     [GlobalSetup]
     public async ValueTask GlobalSetup()
     {
-        _testNumbers = new int[1];
+        _testNumbers = new int[10_000];
         for (var i = 0; i < _testNumbers.Length; i++)
         {
             _testNumbers[i] = Random.Shared.Next(5);
@@ -56,14 +56,14 @@ public class SimpleExecutionBenchmarks
     }
 
     [Benchmark]
-    public async ValueTask<decimal> Sum_Plan()
+    public async ValueTask<long> Sum_Plan()
     {
-        return await _engine.Execute<decimal>(_plan);
+        return await _engine.Execute<long>(_plan);
     }
     
-    // [Benchmark]
-    public async ValueTask<decimal> Sum_Plan2()
+    [Benchmark]
+    public async ValueTask<long> Sum_Plan2()
     {
-        return await _engine.Execute<decimal>(_plan2);
+        return await _engine.Execute<long>(_plan2);
     }
 }
