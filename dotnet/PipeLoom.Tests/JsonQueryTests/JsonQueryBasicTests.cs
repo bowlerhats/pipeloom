@@ -47,6 +47,47 @@ public class JsonQueryBasicTests : IDisposable
     [TestCase("[.0, .1]", """[{"name":"John","age":31},{"name":"Jack","age":41}]""")]
     public async Task Can_Basic_Transform(string jsq, string expected)
     {
+        await this.Run(jsq, expected);
+    }
+
+    [TestCase("filter(.age == 41) | .0.name", "\"Jack\"")]
+    [TestCase("filter(.age == 41 and .name == \"Jack\") | .0.name", "\"Jack\"")]
+    [TestCase("filter(.age == 141)", "[]")]
+    [TestCase("filter(.age == 141) | .0.name", "null")]
+    public async Task Can_Basic_Filter(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+
+    [TestCase("[1, 2] | sum()", "3")]
+    [TestCase("sum([1, 2])", "3")]
+    [TestCase("sum([])", "0")]
+    [TestCase("[] | sum()", "0")]
+    public async Task Can_Sum(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase("map(.age)", "[31,41]")]
+    [TestCase("map({ age2: .age})", """[{"age2":31},{"age2":41}]""")]
+    [TestCase("map(12)", "[12,12]")]
+    [TestCase("map(if(.age == 31, .name, .age))", "[\"John\",41]")]
+    public async Task Can_Map(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase("filter(regex(.name, \"ack\")) | map(.age)", "[41]")]
+    [TestCase("filter(regex(.name, \"Ack\")) | map(.age)", "[]")]
+    [TestCase("filter(regex(.name, \"Ack\", \"i\")) | map(.age)", "[41]")]
+    [TestCase("filter(regex(.name, \"ac?k\")) | map(.age)", "[41]")]
+    public async Task Can_Regex(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+
+    private async Task Run(string jsq, string expected)
+    {
         using var plan = new WeavePlan(_engine);
         plan.AppendJsonQuery(jsq);
         await plan.WithInputCarry<JsonNode>().Fuse<JsonNode>();

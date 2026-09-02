@@ -25,8 +25,7 @@ public sealed class PlGenericDetached : PlGenericType
         return builderParams.Convertible
             .FromValue<Detached<TSourceInner>>()
             .ToValue<Detached<TTargetInner>>()
-            // because Detached is not holding anything of the inner types a simple reinterpret cast is fine
-            .Using(static (_, in v) => Variant.From(v).Unpack<Detached<TTargetInner>>(reinterpret: true));
+            .Using(static (_, in v) => new Detached<TTargetInner>(v.Node));
     }
 }
 

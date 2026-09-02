@@ -4,7 +4,8 @@ using PipeLoom.Builder;
 using PipeLoom.Engine;
 using PipeLoom.Engine.Abstractions.Errors;
 using PipeLoom.JsonQuery.Operators;
-using PipeLoom.JsonQuery.Operators.FactoryOps;
+using PipeLoom.JsonQuery.Operators.Factories;
+using PipeLoom.JsonQuery.Operators.Projectors;
 using PipeLoom.JsonQuery.Parsing;
 using PipeLoom.JsonQuery.Types;
 using PipeLoom.Operators.CoreControlFlow;
@@ -27,12 +28,8 @@ public static class JsonQueryExtensions
             builder.AddOperatorClass(engine => new PlOpPipe(engine));
 
             builder.AddType(engine => new PlJsonNode(engine));
-
-            // builder.AddOperatorClass(engine => new JsOpPipe(engine));
-            builder.AddOperatorClass(engine => new JsOpGet(engine));
-            builder.AddOperatorClass(engine => new JsOpObject(engine));
-            builder.AddOperatorClass(engine => new JsOpArray(engine));
             
+            OperatorRegs.AddOperators(builder);
 
             builder.Registered(regToken);
             return builder;

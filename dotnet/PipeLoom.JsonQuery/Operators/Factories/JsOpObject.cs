@@ -4,7 +4,7 @@ using PipeLoom.Engine.Abstractions;
 using PipeLoom.Engine.Abstractions.Registration;
 using PipeLoom.Operators.Abstractions;
 
-namespace PipeLoom.JsonQuery.Operators.FactoryOps;
+namespace PipeLoom.JsonQuery.Operators.Factories;
 
 public class JsOpObject : PlOperatorClass
 {

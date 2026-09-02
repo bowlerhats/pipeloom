@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using PipeLoom.Engine;
@@ -142,13 +143,80 @@ public abstract class PlOperatorClass
                 break;
         }
 
+        // Variadic needs at least one argument
+        // Consider registering a standalone/explicit nullary instead
+        if (argCount <= 0)
+            return candidate;
+
         if (node.CarryType is not null)
         {
-            candidate ??= this.FindMostSpecific(HandlerSignature.Variadic(returnType, node.CarryType, firstArg), true);
+            candidate ??= this.FindMostSpecific(HandlerSignature.Variadic(returnType, node.CarryType, firstArg), true); 
         }
         
         candidate ??= this.FindMostSpecific(HandlerSignature.Variadic(returnType, firstArg));
 
         return candidate;
+
+        // todo: decide if we support variadic guessing
+
+        // if (node.CarryType is not null)
+        // {
+        //     if (argCount > 0)
+        //     {
+        //         candidate ??= this.FindMostSpecific(HandlerSignature.Variadic(returnType, node.CarryType, firstArg), true);
+        //     }
+        //     else if (candidate is null)
+        //     {
+        //         // we need to guess the variadic handler because the anchor type is unknown (no firstArg)
+        //         var variadicCount = _handlers.Where(IsImplicitVariadic)
+        //             .Count(d => d.Signature.ArgumentTypes[0] == node.CarryType);
+        //         
+        //         if (variadicCount == 1)
+        //         {
+        //             var variadicHandler = _handlers
+        //                 .Where(IsImplicitVariadic)
+        //                 .Single(d => d.Signature.ArgumentTypes[0] == node.CarryType);
+        //             
+        //             var variadicType = variadicHandler.Signature.ArgumentTypes[1];
+        //             
+        //             Debug.Assert(variadicType is not null);
+        //             
+        //             // Try to fit the only available variadic handler with an implicit
+        //             candidate ??= this.FindMostSpecific(HandlerSignature.Variadic(returnType, node.CarryType, variadicType), true);
+        //         }
+        //     }
+        // }
+        //
+        // if (argCount > 0)
+        // {
+        //     candidate ??= this.FindMostSpecific(HandlerSignature.Variadic(returnType, firstArg));
+        // }
+        // else if (candidate is null)
+        // {
+        //     var variadicCount = _handlers.Count(IsNonImplicitVariadic);
+        //
+        //     if (variadicCount == 1)
+        //     {
+        //         var variadicHandler = _handlers.Single(IsNonImplicitVariadic);
+        //             
+        //         var variadicType = variadicHandler.Signature.ArgumentTypes[0];
+        //         
+        //         Debug.Assert(variadicType is not null);
+        //         
+        //         candidate ??= this.FindMostSpecific(HandlerSignature.Variadic(returnType, variadicType));
+        //     }
+        // }
+        //
+        // return candidate;
+    }
+
+    private static bool IsImplicitVariadic(OperatorHandler handler)
+    {
+        return handler is { HasImplicit: true, Signature.IsVariadic: true, Signature.IsHomogenic: false };
+    }
+
+    private static bool IsNonImplicitVariadic(OperatorHandler handler)
+    {
+        return handler is { HasImplicit: false, Signature.IsVariadic: true, Signature.IsHomogenic: true };
     }
 }

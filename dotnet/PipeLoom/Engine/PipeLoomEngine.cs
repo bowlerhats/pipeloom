@@ -253,7 +253,7 @@ public class PipeLoomEngine : IPipeLoomEngine
 
             result = this.Conversions.Convert(context, in result, outputType);
 
-            return result.Unpack<TOutput>(reinterpret: true);
+            return result.Unpack<TOutput>();
         }
         finally
         {

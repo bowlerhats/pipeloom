@@ -165,12 +165,12 @@ public readonly struct Variant : IEquatable<Variant>
     }
 
     [OverloadResolutionPriority(1)]
-    public Variant Unpack(bool reinterpret = false)
+    public Variant Unpack()
     {
         return this;
     }
 
-    public T Unpack<T>(bool reinterpret = false)
+    public T Unpack<T>()
     {
         if (typeof(T) == typeof(Variant))
         {
@@ -179,7 +179,7 @@ public readonly struct Variant : IEquatable<Variant>
             return Unsafe.As<Variant, T>(ref self);
         }
         
-        if (!reinterpret && _type != typeof(T))
+        if (_type != typeof(T))
             throw new InvalidCastException($"Variant contains {_type}, cannot unpack as {typeof(T)}");
 
         if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
@@ -209,13 +209,13 @@ public readonly struct Variant : IEquatable<Variant>
     }
     
     [OverloadResolutionPriority(1)]
-    public bool TryUnpack(out Variant value, bool reinterpret = false)
+    public bool TryUnpack(out Variant value)
     {
         value = this;
         return true;
     }
     
-    public bool TryUnpack<T>(out T value, bool reinterpret = false)
+    public bool TryUnpack<T>(out T value)
     {
         if (typeof(T) == typeof(Variant))
         {
@@ -226,7 +226,7 @@ public readonly struct Variant : IEquatable<Variant>
         
         value = default!;
         
-        if (!reinterpret && _type != typeof(T))
+        if (_type != typeof(T))
             return false;
         
         if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
@@ -255,21 +255,21 @@ public readonly struct Variant : IEquatable<Variant>
         return true;
     }
 
-    public Variant UncheckedCastAs(Type type, object? tag = null)
-    {
-        if (this.IsUndefined)
-            throw new InvalidCastException("Undefined Variant cannot be cast to a type");
-        
-        return this.IsDecomposed
-            ? new Variant(_reference, _packed, type, tag, true)
-            : this.IsPureReference
-                ? new Variant(_reference, type, tag)
-                : this.IsPureValue
-                    ? new Variant(_packed, type, tag)
-                    // This state should be unreachable, refer to AssertValidFlags for more info
-                    : throw new InvalidOperationException(
-                        $"Variant is in an invalid state: {_flags}. This indicates a bug, not user error.");
-    }
+    // public Variant UncheckedCastAs(Type type, object? tag = null)
+    // {
+    //     if (this.IsUndefined)
+    //         throw new InvalidCastException("Undefined Variant cannot be cast to a type");
+    //     
+    //     return this.IsDecomposed
+    //         ? new Variant(_reference, _packed, type, tag, true)
+    //         : this.IsPureReference
+    //             ? new Variant(_reference, type, tag)
+    //             : this.IsPureValue
+    //                 ? new Variant(_packed, type, tag)
+    //                 // This state should be unreachable, refer to AssertValidFlags for more info
+    //                 : throw new InvalidOperationException(
+    //                     $"Variant is in an invalid state: {_flags}. This indicates a bug, not user error.");
+    // }
 
     public static Variant VerbatimCopyUnsafe<TVariant>(in TVariant opaqueVariant)
     {

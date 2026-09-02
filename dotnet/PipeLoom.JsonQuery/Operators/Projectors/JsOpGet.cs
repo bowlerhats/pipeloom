@@ -7,7 +7,7 @@ using PipeLoom.Engine.Abstractions.Errors;
 using PipeLoom.Engine.Abstractions.Registration;
 using PipeLoom.Operators.Abstractions;
 
-namespace PipeLoom.JsonQuery.Operators;
+namespace PipeLoom.JsonQuery.Operators.Projectors;
 
 public class JsOpGet : PlOperatorClass
 {

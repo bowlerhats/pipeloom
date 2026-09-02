@@ -4,7 +4,7 @@ using PipeLoom.Engine.Abstractions;
 using PipeLoom.Engine.Abstractions.Registration;
 using PipeLoom.Operators.Abstractions;
 
-namespace PipeLoom.JsonQuery.Operators.FactoryOps;
+namespace PipeLoom.JsonQuery.Operators.Factories;
 
 public class JsOpArray : PlOperatorClass
 {
@@ -17,7 +17,13 @@ public class JsOpArray : PlOperatorClass
     {
         base.RegisterHandlers(registrator);
 
+        registrator.AsNullary().Function(ToArray);
         registrator.AsVariadic<JsonNode?>().Function(ToArray);
+    }
+
+    public static JsonNode ToArray()
+    {
+        return new JsonArray();
     }
 
     public static JsonNode ToArray(ReadOnlyMemory<JsonNode?> args)

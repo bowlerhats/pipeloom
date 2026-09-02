@@ -109,7 +109,7 @@ internal sealed class WeaveContext : IWeaveContext, IDisposable
             ? await this.StepAnalyzed((WeaveNode)detached.Node, (StepState)state)
             : await this.StepAnalyzed((WeaveNode)detached.Node, (StepState)state, vCarry);
 
-        return stepResult.Unpack<T>();
+        return this.Engine.Conversions.Convert<T>(this, in stepResult);
     }
  
     public ValueTask<Variant> Step(Variant? carry)
