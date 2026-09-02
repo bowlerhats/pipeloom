@@ -23,7 +23,7 @@ public sealed class WeaveNode : IWeaveNode
 
     public IEnumerable<WeaveNode> Arguments => _children.Where(d => d.IsArgument);
     
-    public WeaveNode? Parent { get; }
+    public WeaveNode? Parent { get; private set; }
 
     public bool IsArgument => this.IsEnabled && !this.IsFuseOnly && (this.IsForcedArgument || !this.IsVoid);
     
@@ -38,13 +38,17 @@ public sealed class WeaveNode : IWeaveNode
     
     internal PlTypeDef? NarrowedReturnType { get; set; }
     
-    internal PlTypeDef ReturnType => this.NarrowedReturnType ?? this.RequiredReturnType ?? this.Engine.WellKnown.Void;
+    public PlTypeDef ReturnType => this.NarrowedReturnType ?? this.RequiredReturnType ?? this.Engine.WellKnown.Void;
     
     internal PlOperatorClass OperatorClass { get; private set; }
     
     internal OperatorHandler? Handler { get; private set; }
-    
-    internal PlTypeDef? CarryType { get; set; }
+
+    public PlTypeDef? CarryType
+    {
+        get => field ?? this.Parent?.CarryType;
+        set;
+    }
 
     internal bool HasCarry => this.CarryType is not null;
     
@@ -80,18 +84,57 @@ public sealed class WeaveNode : IWeaveNode
         return res;
     }
 
+    public WeaveNode MoveToFirst()
+    {
+        this.CheckFuse();
+
+        if (this.Parent is null)
+            return this;
+
+        this.Parent._children.Remove(this);
+        this.Parent._children.Insert(0, this);
+        
+        this.ReIndexChildren();
+        
+        return this;
+    }
+    
+    public WeaveNode WrapChildren(string operatorName)
+    {
+        this.CheckFuse();
+
+        var tmp = _children.ToArray();
+        _children.Clear();
+        
+        var wrapper = new WeaveNode(this.Plan, operatorName, this);
+        wrapper._children.AddRange(tmp);
+        wrapper.ReIndexChildren();
+        
+        foreach (var child in wrapper._children)
+        {
+            child.Parent = wrapper;
+        }
+        
+        return wrapper;
+    }
+    
     public WeaveNode AppendOperator(string operatorName)
     {
+        this.CheckFuse();
         return new WeaveNode(this.Plan, operatorName, this);
     }
 
-    public void AppendValue<T>(T value)
+    public WeaveNode AppendValue<T>(T value)
     {
+        this.CheckFuse();
+            
         var node = this.AppendOperator("const");
         node.ImplicitValue = Variant.From(value, this.Engine);
+
+        return node;
     }
     
-    internal async ValueTask Fuse()
+    public async ValueTask Fuse()
     {
         this.ResetFuse();
         
@@ -149,5 +192,19 @@ public sealed class WeaveNode : IWeaveNode
         this.IsEnabled = !this.IsFuseOnly;
         
         this.IsFused = false;
+    }
+
+    private void CheckFuse()
+    {
+        if (this.IsFused)
+            throw new PipeLoomException("WeaveNode is already fused");
+    }
+
+    private void ReIndexChildren()
+    {
+        for (var i = 0; i < _children.Count; i++)
+        {
+            _children[i].Index = i;
+        }
     }
 }

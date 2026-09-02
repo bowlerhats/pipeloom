@@ -74,6 +74,12 @@ public class WeavePlan : IDisposable
         }
     }
 
+    public WeavePlan WithInputCarry<T>()
+    {
+        this.RootNode.CarryType = this.Engine.TypeOf<T>();
+        return this;
+    }
+
     internal void AddNode(WeaveNode node)
     {
         this.CheckDisposed();

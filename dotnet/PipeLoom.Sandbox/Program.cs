@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using PipeLoom.Builder;
 using PipeLoom.Engine;
 using PipeLoom.Engine.Abstractions;
+using PipeLoom.JsonQuery;
 
 namespace PipeLoom.Sandbox;
 
@@ -19,21 +21,11 @@ internal class Program
         plan.RootNode.AppendOperator("log").AppendValue("TEST");
         plan.RootNode.AppendOperator("log").AppendValue("TEST2");
         
-        //plan.RootNode.AppendOperator("const").AppendValue("RES");
-        // plan.RootNode.AppendOperator("sum").AppendValue(new Many<int>([1, 2, 3]));
-        //plan.RootNode.AppendValue((decimal)1.33);
-        
-        // var pipe = plan.RootNode.AppendOperator("pipe");
-        // pipe.AppendValue(Many.Wrap<ulong>([1, 2, 3]));
-        // pipe.AppendOperator("sum");
-            //.AppendValue(new Many<short>([1, 2, 3]));
-
-        // -
         var ifcond = plan.RootNode.AppendOperator("if");
         ifcond.AppendOperator("isNull").AppendValue(1);
         ifcond.AppendOperator("log").AppendValue("IF-THEN");
         ifcond.AppendOperator("log").AppendValue("IF-ELSE");
-
+        
         plan.RootNode.AppendOperator("sum").AppendValue(Many.Wrap<ulong>([1, 2, 3]));
         
         var res = await engine.Execute<ulong>(plan);

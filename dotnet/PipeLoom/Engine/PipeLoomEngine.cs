@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using PipeLoom.Engine.Abstractions;
+using PipeLoom.Engine.Abstractions.Adapters;
 using PipeLoom.Engine.Abstractions.Bundles;
 using PipeLoom.Engine.Abstractions.Errors;
 using PipeLoom.Engine.Pools;
@@ -200,7 +201,12 @@ public class PipeLoomEngine : IPipeLoomEngine
         return Interlocked.Increment(ref _nextTypeId);
     }
 
-    public async ValueTask<TOutput> Execute<TOutput>(WeavePlan plan)
+    public ValueTask<TOutput> Execute<TOutput>(WeavePlan plan)
+    {
+        return this.Execute<Ignored, TOutput>(plan, default);
+    }
+
+    public async ValueTask<TOutput> Execute<TInput, TOutput>(WeavePlan plan, TInput input)
     {
         this.CheckDisposed();
         
@@ -222,8 +228,28 @@ public class PipeLoomEngine : IPipeLoomEngine
             }
 
             using var context = new WeaveContext(this, plan);
+            
+            Variant result;
+            
+            if (typeof(TInput) == typeof(Ignored))
+            {
+                result = await context.Step(null);
+            }
+            else if (plan.RootNode.CarryType is null)
+            {
+                result = await context.Step(null);
+            } else
+            {
+                var carryType = plan.RootNode.CarryType;
+                
+                var inputType = this.TypeOf<TInput>();
+                var vInput = Variant.From(input, inputType);
 
-            var result = await context.Step();
+                if (!this.Conversions.TryConvert(context, in vInput, carryType, out var converted))
+                    throw new PipeLoomException($"Provided input of type '{inputType}' could not be converted to carry type of '{carryType}'");
+
+                result = await context.Step(converted);
+            }
 
             result = this.Conversions.Convert(context, in result, outputType);
 
@@ -274,4 +300,6 @@ public class PipeLoomEngine : IPipeLoomEngine
 #pragma warning restore IL2075
         }
     }
+    
+    private struct Ignored{}
 }

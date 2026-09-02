@@ -1,0 +1,48 @@
+﻿using System;
+using System.Text.Json.Nodes;
+using PipeLoom.Engine.Abstractions;
+using PipeLoom.Engine.Abstractions.Registration;
+using PipeLoom.Operators.Abstractions;
+
+namespace PipeLoom.JsonQuery.Operators.FactoryOps;
+
+public class JsOpObject : PlOperatorClass
+{
+    public JsOpObject(IPipeLoomEngine engine)
+        : base(engine, "object")
+    {
+    }
+
+    public override void RegisterHandlers(PlOperatorRegistrator registrator)
+    {
+        base.RegisterHandlers(registrator);
+
+        registrator.AsVariadic<JsonNode?, JsonNode?>().Mapper(MergeObject);
+        registrator.AsBinary<string, JsonNode?>().Function(MakeObject);
+    }
+
+    private static JsonNode MergeObject(JsonNode? node, ReadOnlyMemory<JsonNode?> args)
+    {
+        var res = new JsonObject();
+        foreach (var jsonNode in args.Span)
+        {
+            if (jsonNode is JsonObject jso)
+            {
+                foreach (var (key, value) in jso)
+                {
+                    res[key] = value?.DeepClone();
+                }
+            }
+        }
+        
+        return res;
+    }
+
+    private static JsonNode MakeObject(string prop, JsonNode? value)
+    {
+        return new JsonObject
+        {
+            [prop] = value?.DeepClone()
+        };
+    }
+}

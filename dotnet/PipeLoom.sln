@@ -15,6 +15,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PipeLoom.Sandbox", "PipeLoo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benchmarks", "Benchmarks\Benchmarks.csproj", "{8D1D8A2C-E8D6-4D26-A94B-B2DA17AC136D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PipeLoom.JsonQuery", "PipeLoom.JsonQuery\PipeLoom.JsonQuery.csproj", "{318F5C02-F40F-4C4A-ADB7-3720A2B61909}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PipeLoom.JsonQuery.Cli", "PipeLoom.JsonQuery.Cli\PipeLoom.JsonQuery.Cli.csproj", "{791D7982-80D5-427E-BA24-C150A5B068FC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -37,5 +41,13 @@ Global
 		{8D1D8A2C-E8D6-4D26-A94B-B2DA17AC136D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8D1D8A2C-E8D6-4D26-A94B-B2DA17AC136D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8D1D8A2C-E8D6-4D26-A94B-B2DA17AC136D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{318F5C02-F40F-4C4A-ADB7-3720A2B61909}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{318F5C02-F40F-4C4A-ADB7-3720A2B61909}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{318F5C02-F40F-4C4A-ADB7-3720A2B61909}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{318F5C02-F40F-4C4A-ADB7-3720A2B61909}.Release|Any CPU.Build.0 = Release|Any CPU
+		{791D7982-80D5-427E-BA24-C150A5B068FC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{791D7982-80D5-427E-BA24-C150A5B068FC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{791D7982-80D5-427E-BA24-C150A5B068FC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{791D7982-80D5-427E-BA24-C150A5B068FC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

@@ -124,19 +124,61 @@ public abstract class PlOperatorClass //: IPlOperatorClass
 
     public virtual OperatorHandler? ChooseHandler(WeaveNode node)
     {
+        OperatorHandler? candidate = null;
+
+        var argCount = node.CountArguments();
+
+        var returnType = this.Engine.WellKnown.Variant;
+
+        var firstArg = node.Arguments.ElementAtOrDefault(0)?.ReturnType!;
+        var secondArg = node.Arguments.ElementAtOrDefault(1)?.ReturnType!;
+        var thirdArg = node.Arguments.ElementAtOrDefault(2)?.ReturnType!;
+        
         if (node.CarryType is not null)
         {
-            var carriedLimit = HandlerSignature.From(
-                this.Engine.WellKnown.Variant,
-                node.Arguments.Select(d => d.ReturnType).Prepend(node.CarryType));
+            switch (argCount)
+            {
+                case 0:
+                    candidate = this.FindMostSpecific(HandlerSignature.Unary(returnType, node.CarryType), true);
+                        //?? this.FindMostSpecific(HandlerSignature.Unary(returnType, node.CarryType));
+                    break;
+                case 1:
+                    candidate = this.FindMostSpecific(HandlerSignature.Binary(returnType, node.CarryType, firstArg),
+                        true);
+                                //?? this.FindMostSpecific(HandlerSignature.Binary(returnType, node.CarryType, firstArg));
+                    break;
+                case 2:
+                    candidate = this.FindMostSpecific(
+                        HandlerSignature.Ternary(returnType, node.CarryType, firstArg, secondArg), true);
+                                //?? this.FindMostSpecific(HandlerSignature.Ternary(returnType, node.CarryType, firstArg, secondArg));
+                    break;
+            }
 
-            var candidate = this.FindMostSpecific(carriedLimit, true);
-            if (candidate is not null)
-                return candidate;
+            candidate ??= this.FindMostSpecific(HandlerSignature.Variadic(returnType, node.CarryType, firstArg), true);
+            //?? this.FindMostSpecific(HandlerSignature.Variadic(returnType, node.CarryType, firstArg));
         }
 
-        var searchLimit = HandlerSignature.From(this.Engine.WellKnown.Variant, node.Arguments.Select(d => d.ReturnType));
+        if (candidate is not null)
+            return candidate;
         
-        return this.FindMostSpecific(searchLimit);
+        switch (argCount)
+        {
+            case 0:
+                candidate = this.FindMostSpecific(HandlerSignature.Nullary(returnType));
+                break;
+            case 1:
+                candidate = this.FindMostSpecific(HandlerSignature.Unary(returnType, firstArg));
+                break;
+            case 2:
+                candidate = this.FindMostSpecific(HandlerSignature.Binary(returnType, firstArg, secondArg));
+                break;
+            case 3:
+                candidate = this.FindMostSpecific(HandlerSignature.Ternary(returnType, firstArg, secondArg, thirdArg));
+                break;
+        }
+
+        candidate ??= this.FindMostSpecific(HandlerSignature.Variadic(returnType, firstArg));
+        
+        return candidate;
     }
 }

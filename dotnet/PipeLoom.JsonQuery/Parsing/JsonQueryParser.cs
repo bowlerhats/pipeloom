@@ -1,0 +1,509 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Text.Json.Nodes;
+
+namespace PipeLoom.JsonQuery.Parsing;
+
+// AI generated
+
+/// <summary>
+/// Parses JsonQuery Text Format into the JSON Format AST (System.Text.Json.Nodes),
+/// per https://jsonquerylang.org/docs/#json-format.
+///
+/// Fully standalone: depends only on JsonQueryLexer (this project) and
+/// System.Text.Json.Nodes (BCL). Zero dependency on JsonQuery.Net.
+///
+/// Why standalone, not built on JsonQuery.Net's JsonQueryReader/JsonQueryParser:
+///   - JsonQueryParser (their parser) constructs IJsonQueryable instances via
+///     Activator.CreateInstance on runtime-closed generic types — confirmed to
+///     break under Native AOT, and structural to their extensibility design
+///     (not a narrow bug that's realistically fixable upstream).
+///   - JsonQueryReader (their tokenizer) was tried directly and found to have a
+///     real correctness bug independent of AOT: it tracks an internal
+///     "MeetOperator" marker on a stack to validate operator sequencing, but
+///     that marker is only popped in SOME of Read()'s branches (comma, '}',
+///     ')', ']', '|', finding a new operator) — NOT in the property-path branch
+///     or the generic value-scan branch. A query like `.age + .nage * pick(.a,
+///     .b)` (operator, then a property-path operand, then another operator)
+///     leaves a stale marker on the stack that corrupts the next operator
+///     lookup, throwing a confusing "Unexpected ''" deep inside the reader.
+///     This is not something callers can work around by sequencing Read() calls
+///     differently — it's a bug in the reader's own state machine.
+///   Given both halves of JsonQuery.Net were found to be unreliable (one for
+///   AOT, one for plain correctness), this parser has zero dependency on that
+///   library at all — it owns tokenization (via JsonQueryLexer) and parsing
+///   end to end, with a fully stateless token LIST (not a stateful cursor with
+///   hidden internal tracking) as its only input.
+///
+/// AOT safety: every literal added to a JsonArray/JsonObject goes through an
+/// explicit, non-generic JsonValue.Create(string|decimal|bool) overload via the
+/// Str()/Call() helpers below — never through JsonArray's collection-initializer
+/// implicit conversions, which route through JsonValue.Create&lt;T&gt;'s
+/// generic/reflection-touching fallback path and are NOT safe under
+/// PublishAot=true.
+///
+/// Grammar (highest to lowest precedence), from the docs:
+///   8  ^                         (non-chaining — parses at most one RHS)
+///   7  * / %                     (left-to-right, pairwise-folded)
+///   6  + -                       (left-to-right, vararg-folded when uniform)
+///   5  > >= < <= in "not in"     (non-chaining)
+///   4  == !=                     (non-chaining)
+///   3  and                       (left-to-right, vararg)
+///   2  or                        (left-to-right, vararg)
+///   1  |  (pipe)                 (left-to-right, vararg)
+///
+/// STILL UNVERIFIED — worth checking against the official test suite
+/// (https://github.com/jsonquerylang/jsonquery/tree/develop/test-suite) before
+/// relying on this in production:
+///   - Whether '*' '/' '%' are truly pairwise (as implemented) or vararg like
+///     '+'/'-' in the reference implementation. Docs only explicitly call out
+///     and/or/+/- as vararg; adjust ParseMultiplicative to mirror
+///     ParseAdditive's "allSame" fold if the test suite shows otherwise.
+///   - Exact AST shape for unary minus on a non-literal operand (e.g. -(.age));
+///     JsonQuery's docs don't show a dedicated unary-minus node, so this
+///     currently emits ["subtract", 0, x] as a reasonable guess.
+///   - Exact operator function names (eq/neq/gt/gte/lt/lte/add/subtract/
+///     multiply/divide/mod/pow/and/or/in/"not in") — inferred from the one
+///     worked example in the docs (gte, get) plus obvious convention; cross-
+///     check against https://jsonquerylang.org/reference/ function by function.
+/// </summary>
+internal sealed class JsonQueryParser
+{
+    private readonly List<Token> _tokens;
+    private int _pos;
+
+    private JsonQueryParser(List<Token> tokens)
+    {
+        _tokens = tokens;
+        _pos = 0;
+    }
+
+    /// <summary>Entry point: parse a full query string into its JSON Format AST.</summary>
+    public static JsonNode? Parse(string source)
+    {
+        var tokens = new JsonQueryLexer(source).Tokenize();
+        var parser = new JsonQueryParser(tokens);
+        JsonNode? result = parser.ParsePipe();
+        parser.Expect(TokType.Eof, "end of input");
+        return result;
+    }
+
+    // ---- AOT-safe node construction --------------------------------------
+    // JsonArray's collection initializer and JsonNode's implicit conversions
+    // from primitive types (string/bool/decimal/etc.) route through
+    // JsonValue.Create<T>, whose generic/implicit path can hit reflection-based
+    // fallbacks disabled under Native AOT. The explicit, non-generic overloads
+    // (JsonValue.Create(string?), JsonValue.Create(decimal), JsonValue.Create(bool))
+    // have dedicated non-reflective fast paths — Str()/Call() below route
+    // through those exclusively so no call site can accidentally regress to an
+    // implicit conversion.
+
+    private static JsonValue Str(string value) => JsonValue.Create(value)!;
+
+    // JsonArray.Add<T>(T) is the generic overload, annotated
+    // [RequiresUnreferencedCode]/[RequiresDynamicCode] regardless of what T
+    // actually is — the analyzer can't see through to know T is always a safe
+    // JsonValue here, so calling Add(Str(keyword)) infers Add<JsonValue> and
+    // trips the warning even though nothing unsafe is actually happening.
+    // JsonArray also exposes a non-generic Add(JsonNode?) (via its underlying
+    // IList<JsonNode?> surface), which has no such annotation. Explicitly
+    // typing the local as JsonNode? forces overload resolution to pick that
+    // non-generic path instead of inferring the generic one.
+    private static void AddNode(JsonArray arr, JsonNode? node) => arr.Add(node);
+
+    private static JsonArray Call(string keyword, params JsonNode?[] args)
+    {
+        var arr = new JsonArray();
+        JsonNode? keywordNode = Str(keyword);
+        AddNode(arr, keywordNode);
+        foreach (var a in args) AddNode(arr, a);
+        return arr;
+    }
+
+    // ---- token stream helpers ---------------------------------------------
+
+    private Token Current => _tokens[_pos];
+
+    private Token Advance()
+    {
+        var t = _tokens[_pos];
+        if (_pos < _tokens.Count - 1) _pos++;
+        return t;
+    }
+
+    private bool Check(TokType type) => this.Current.Type == type;
+
+    private bool CheckIdent(string keyword) =>
+        this.Current.Type == TokType.Ident && string.Equals(this.Current.Text, keyword, StringComparison.Ordinal);
+
+    private bool CheckOp(string symbol) =>
+        this.Current.Type == TokType.Op && string.Equals(this.Current.Text, symbol, StringComparison.Ordinal);
+
+    private Token Expect(TokType type, string what)
+    {
+        if (this.Current.Type != type)
+            throw new JsonQueryParseException($"Expected {what} but got {this.Current}", this.Current.Position);
+        return this.Advance();
+    }
+
+    // ---- precedence levels -------------------------------------------------
+    // Each level is a thin wrapper; only 'and'/'or'/'|'/'+'/'-' loop (vararg,
+    // left-associative). '^' and the non-chaining comparison groups parse a
+    // single optional right-hand side and then stop, per the docs' precedence
+    // table ("do not support more than two values").
+
+    private JsonNode? ParsePipe()
+    {
+        var parts = new List<JsonNode?> { this.ParseOr() };
+        while (this.Check(TokType.Pipe))
+        {
+            this.Advance();
+            parts.Add(this.ParseOr());
+        }
+
+        if (parts.Count == 1) return parts[0];
+
+        return Call("pipe", parts.ToArray());
+    }
+
+    private JsonNode? ParseOr()
+    {
+        var parts = new List<JsonNode?> { this.ParseAnd() };
+        while (this.CheckIdent("or"))
+        {
+            this.Advance();
+            parts.Add(this.ParseAnd());
+        }
+
+        if (parts.Count == 1) return parts[0];
+
+        return Call("or", parts.ToArray());
+    }
+
+    private JsonNode? ParseAnd()
+    {
+        var parts = new List<JsonNode?> { this.ParseEquality() };
+        while (this.CheckIdent("and"))
+        {
+            this.Advance();
+            parts.Add(this.ParseEquality());
+        }
+
+        if (parts.Count == 1) return parts[0];
+
+        return Call("and", parts.ToArray());
+    }
+
+    // ==, != : non-chaining (parse at most one)
+    private JsonNode? ParseEquality()
+    {
+        JsonNode? left = this.ParseRelational();
+
+        string? opName = null;
+        if (this.CheckOp("==")) opName = "eq";
+        else if (this.CheckOp("!=")) opName = "neq";
+
+        if (opName is null) return left;
+
+        this.Advance();
+        JsonNode? right = this.ParseRelational();
+        return Call(opName, left, right);
+    }
+
+    // >, >=, <, <=, in, not in : non-chaining (parse at most one)
+    private JsonNode? ParseRelational()
+    {
+        JsonNode? left = this.ParseAdditive();
+
+        string? opName = this.TryReadRelationalOperator();
+        if (opName is null) return left;
+
+        JsonNode? right = this.ParseAdditive();
+        return Call(opName, left, right);
+    }
+
+    private string? TryReadRelationalOperator()
+    {
+        if (this.CheckOp(">=")) { this.Advance(); return "gte"; }
+        if (this.CheckOp("<=")) { this.Advance(); return "lte"; }
+        if (this.CheckOp(">")) { this.Advance(); return "gt"; }
+        if (this.CheckOp("<")) { this.Advance(); return "lt"; }
+
+        if (this.CheckIdent("in"))
+        {
+            this.Advance();
+            return "in";
+        }
+
+        if (this.CheckIdent("not"))
+        {
+            // Lookahead for "not in" without permanently consuming "not" if
+            // it's not followed by "in". Our token list makes this trivial —
+            // just peek one slot further, no destructive read/backtrack needed
+            // (unlike JsonQuery.Net's reader, which required a Next()-based
+            // non-destructive lookahead copy for the equivalent case).
+            if (_pos + 1 < _tokens.Count &&
+                _tokens[_pos + 1].Type == TokType.Ident &&
+                string.Equals(_tokens[_pos + 1].Text, "in", StringComparison.Ordinal))
+            {
+                this.Advance(); // consume "not"
+                this.Advance(); // consume "in"
+                return "not in";
+            }
+            // Bare "not" without a following "in" — not a valid operator on
+            // its own in this grammar; leave it unconsumed and let the caller
+            // report it as an unexpected token wherever parsing next expects
+            // something else.
+        }
+
+        return null;
+    }
+
+    // +, - : left-to-right, vararg-folded when the whole chain uses one operator
+    private JsonNode? ParseAdditive()
+    {
+        JsonNode? left = this.ParseMultiplicative();
+        var terms = new List<(string op, JsonNode? value)>();
+
+        while (this.CheckOp("+") || this.CheckOp("-"))
+        {
+            string op = this.CheckOp("+") ? "add" : "subtract";
+            this.Advance();
+            terms.Add((op, this.ParseMultiplicative()));
+        }
+
+        if (terms.Count == 0) return left;
+
+        // If every operator in the chain is the same, JsonQuery allows vararg
+        // form: a + b + c -> ["add", a, b, c]. Mixed +/- cannot collapse to one
+        // vararg call, so fold left-associatively instead:
+        // (a - b) + c -> ["add", ["subtract", a, b], c]
+        bool allSame = true;
+        for (int i = 1; i < terms.Count; i++)
+            if (terms[i].op != terms[0].op) { allSame = false; break; }
+
+        if (allSame)
+        {
+            var values = new List<JsonNode?> { left };
+            foreach (var (_, value) in terms) values.Add(value);
+            return Call(terms[0].op, values.ToArray());
+        }
+
+        JsonNode? acc = left;
+        foreach (var (op, value) in terms)
+            acc = Call(op, acc, value);
+        return acc;
+    }
+
+    // *, /, % : left-to-right, folded pairwise. UNVERIFIED whether these
+    // should instead vararg-fold like +/- — docs only explicitly name
+    // and/or/+/- as vararg. Check the test suite; if * should vararg too,
+    // mirror ParseAdditive's "allSame" fold here.
+    private JsonNode? ParseMultiplicative()
+    {
+        JsonNode? left = this.ParsePower();
+
+        while (this.CheckOp("*") || this.CheckOp("/") || this.CheckOp("%"))
+        {
+            string op = this.CheckOp("*") ? "multiply" : this.CheckOp("/") ? "divide" : "mod";
+            this.Advance();
+            JsonNode? right = this.ParsePower();
+            left = Call(op, left, right);
+        }
+
+        return left;
+    }
+
+    // ^ : non-chaining per docs ("do not support more than two values"); use
+    // parentheses to nest, e.g. (2 ^ 3) ^ 4
+    private JsonNode? ParsePower()
+    {
+        JsonNode? left = this.ParseUnary();
+
+        if (this.CheckOp("^"))
+        {
+            this.Advance();
+            JsonNode? right = this.ParseUnary();
+            return Call("pow", left, right);
+        }
+
+        return left;
+    }
+
+    // unary minus: '-' followed immediately by a primary
+    private JsonNode? ParseUnary()
+    {
+        if (this.CheckOp("-"))
+        {
+            this.Advance();
+            JsonNode? operand = this.ParseUnary();
+
+            if (operand is JsonValue v && v.TryGetValue<decimal>(out decimal d))
+                return JsonValue.Create(-d);
+
+            // Non-literal negation, e.g. -(.age) — JsonQuery's docs don't show
+            // a dedicated unary-minus AST node, so this falls back to
+            // ["subtract", 0, x]. Verify against the test suite's
+            // parse.test.json if this matters for your queries.
+            return Call("subtract", JsonValue.Create(0m), operand);
+        }
+
+        return this.ParsePrimary();
+    }
+
+    // ---- primary: functions, properties, objects, arrays, literals, parens ----
+
+    private JsonNode? ParsePrimary()
+    {
+        switch (this.Current.Type)
+        {
+            case TokType.LParen:
+                this.Advance();
+                JsonNode? inner = this.ParsePipe();
+                this.Expect(TokType.RParen, "')'");
+                return inner;
+
+            case TokType.Dot:
+                return this.ParsePropertyChain();
+
+            case TokType.LBrace:
+                return this.ParseObject();
+
+            case TokType.LBracket:
+                return this.ParseArray();
+
+            case TokType.QuotedString:
+                return Str(this.Advance().StringValue!);
+
+            case TokType.Number:
+                return JsonValue.Create(this.Advance().NumberValue);
+
+            case TokType.True:
+                this.Advance();
+                return JsonValue.Create(true);
+
+            case TokType.False:
+                this.Advance();
+                return JsonValue.Create(false);
+
+            case TokType.Null:
+                this.Advance();
+                return null; // JSON null literal — a genuinely null JsonNode
+
+            case TokType.Ident:
+                return this.ParseFunctionCall();
+
+            default:
+                throw new JsonQueryParseException($"Unexpected token {this.Current}", this.Current.Position);
+        }
+    }
+
+    // .prop1.prop2 / ."quoted prop"  ->  ["get", "prop1", "prop2"]
+    private JsonNode ParsePropertyChain()
+    {
+        var segments = new List<string>();
+
+        while (this.Check(TokType.Dot))
+        {
+            this.Advance();
+            segments.Add(this.ReadPropertySegment());
+        }
+
+        var segArgs = new JsonNode?[segments.Count];
+        for (int i = 0; i < segments.Count; i++) segArgs[i] = Str(segments[i]);
+        return Call("get", segArgs);
+    }
+
+    private string ReadPropertySegment()
+    {
+        if (this.Check(TokType.QuotedString))
+            return this.Advance().StringValue!;
+
+        if (this.Check(TokType.Ident) || this.Check(TokType.Number))
+        {
+            // Numeric segments like `.2` lex as Number; docs show `.2` as an
+            // array-index getter, kept as its literal text here (matches the
+            // "get" argument being a plain index, not necessarily a string —
+            // see TODO below).
+            var t = this.Advance();
+            return t.Text;
+        }
+
+        throw new JsonQueryParseException("Expected property name after '.'", this.Current.Position);
+    }
+
+    // name(arg1, arg2, ...)  ->  ["name", arg1, arg2, ...]
+    // Includes get(...) which follows the same call syntax per the docs — no
+    // special-casing needed since we never validate function names at parse
+    // time (see design note on the class).
+    private JsonNode ParseFunctionCall()
+    {
+        string name = this.Advance().Text;
+        this.Expect(TokType.LParen, "'('");
+
+        var args = new List<JsonNode?>();
+
+        if (!this.Check(TokType.RParen))
+        {
+            args.Add(this.ParsePipe());
+            while (this.Check(TokType.Comma))
+            {
+                this.Advance();
+                args.Add(this.ParsePipe());
+            }
+        }
+
+        this.Expect(TokType.RParen, "')'");
+        return Call(name, args.ToArray());
+    }
+
+    // { prop1: query1, prop2: query2, ... }  ->  ["object", { prop1: query1, ... }]
+    private JsonNode ParseObject()
+    {
+        this.Expect(TokType.LBrace, "'{'");
+        var obj = new JsonObject();
+
+        if (!this.Check(TokType.RBrace))
+        {
+            this.ParseObjectEntry(obj);
+            while (this.Check(TokType.Comma))
+            {
+                this.Advance();
+                this.ParseObjectEntry(obj);
+            }
+        }
+
+        this.Expect(TokType.RBrace, "'}'");
+        return Call("object", obj);
+    }
+
+    private void ParseObjectEntry(JsonObject obj)
+    {
+        string key = this.Check(TokType.QuotedString)
+            ? this.Advance().StringValue!
+            : this.Expect(TokType.Ident, "property key").Text;
+        this.Expect(TokType.Colon, "':'");
+        JsonNode? value = this.ParsePipe();
+        obj[key] = value;
+    }
+
+    // [ item1, item2, ... ]  ->  ["array", item1, item2, ...]
+    private JsonNode ParseArray()
+    {
+        this.Expect(TokType.LBracket, "'['");
+        var items = new List<JsonNode?>();
+
+        if (!this.Check(TokType.RBracket))
+        {
+            items.Add(this.ParsePipe());
+            while (this.Check(TokType.Comma))
+            {
+                this.Advance();
+                items.Add(this.ParsePipe());
+            }
+        }
+
+        this.Expect(TokType.RBracket, "']'");
+        return Call("array", items.ToArray());
+    }
+}

@@ -11,7 +11,12 @@ internal sealed class StepState : IStepState
     public WeaveNode Node => _node ?? throw new PipeLoomException("State is not bound");
     public StepState? Parent { get; private set; }
 
-    public Variant Carry { get; set; } = Variant.Undefined;
+    public Variant Carry
+    {
+        get => (field.IsUndefined ? this.Parent?.Carry : field) ?? Variant.Undefined; 
+        set;
+    }
+    
     
     public IPoolSet PoolSet => this.Context.Pools;
     

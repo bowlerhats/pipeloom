@@ -112,123 +112,119 @@ internal sealed class WeaveContext : IWeaveContext, IDisposable
         return stepResult.Unpack<T>();
     }
  
-    public ValueTask<Variant> Step()
+    public ValueTask<Variant> Step(Variant? carry)
     {
-        return this.Step(this.Plan.RootNode, null, null);
+        return carry.HasValue
+            ? this.Step(this.Plan.RootNode, null, true, carry)
+            : this.Step(this.Plan.RootNode, null, false, null);
     }
 
     private ValueTask<Variant> StepAnalyzed(WeaveNode node, StepState parentState, Variant? newCarry = null)
     {
         var carry = newCarry ?? parentState.Carry;
-        if (carry.IsUndefined)
-        {
-            // Step as-is, nothing special
-            return this.Step(node, parentState, null);
-        }
         
         if (node.Handler is null)
             throw new PipeLoomException($"Missing operator handler for '{node.OperatorName}'");
 
-        switch (node.Handler.Role)
-        {
-            case HandlerRole.None:
-                // Step as-is, ignore carry
-                return this.Step(node, parentState, null);
-            
-            // // bundle -> bundle
-            // case HandlerRole.Bundler:
-            //     if (carry.Tag is not PlReadOnlyBundleOf
-            //         && this.Engine.Conversions.TryConvert(this, in carry, this.Engine.WellKnown.ReadOnlyBundleOfVariant, out var converted))
-            //     {
-            //         return this.Step(node, parentState, converted);
-            //     }
-            //     
-            //     break;
-            //
-            // case HandlerRole.Reducer:
-            //     if (carry.Tag is not PlManyOf)
-            //     {
-            //         // if (carry.TryUnpack<IReadOnlyBundle>(out var bundle, reinterpret: true))
-            //         // {
-            //         //     return this.ReduceBundle(node, parentState, bundle);
-            //         // }
-            //
-            //         if (this.Engine.Conversions.TryConvert(this, in carry, this.Engine.WellKnown.ReadOnlyBundleOfVariant, out var transformableBundle))
-            //         {
-            //             return this.ReduceBundle(node, parentState, transformableBundle.Unpack<IReadOnlyBundle<Variant>>());
-            //         }
-            //         
-            //         if (this.Engine.Conversions.TryConvert(this, in carry, this.Engine.WellKnown.ManyOfVariant, out var transformableMany))
-            //         {
-            //             return this.Step(node, parentState, transformableMany);
-            //         }
-            //         
-            //         return this.Step(node, parentState, null);
-            //     }
-            //     
-            //     break;
-            // case HandlerRole.Transformer:
-            //     if (carry.Tag is not PlMany)
-            //     {
-            //         // if (carry.TryUnpack<IReadOnlyBundle>(out var bundle, reinterpret: true))
-            //         // {
-            //         //     return this.TransformBundle(node, parentState, bundle);
-            //         // }
-            //
-            //         if (this.Engine.Conversions.TryConvert(this, in carry, this.Engine.WellKnown.ReadOnlyBundleOfVariant, out var transformableBundle))
-            //         {
-            //             return this.TransformBundle(node, parentState, transformableBundle.Unpack<IReadOnlyBundle<Variant>>());
-            //         }
-            //         
-            //         if (this.Engine.Conversions.TryConvert(this, in carry, this.Engine.WellKnown.ManyOfVariant, out var transformableMany))
-            //         {
-            //             return this.Step(node, parentState, transformableMany);
-            //         }
-            //         
-            //         return this.Step(node, parentState, null);
-            //     }
-            //     
-            //     break;
-            //
-            // // one -> one
-            // case HandlerRole.Mapper:
-            //     // if (carry.TryUnpack<IReadOnlyBundle>(out var mapingBundle, reinterpret: true))
-            //     // {
-            //     //     return this.MapBundle(node, parentState, mapingBundle);
-            //     // }
-            //
-            //     if (carry.TryUnpack<Many<Variant>>(out var manyForMapping))
-            //     {
-            //         return this.MapMany(node, parentState, manyForMapping);
-            //     }
-            //
-            //     if (this.Engine.Conversions.TryConvert(this, in carry, this.Engine.WellKnown.ManyOfVariant, out var mapConverted))
-            //     {
-            //         return this.MapMany(node, parentState, mapConverted.Unpack<Many<Variant>>());
-            //     }
-            //     
-            //     break;
-            // case HandlerRole.Expander:
-            //     
-            //     if (carry.TryUnpack<IReadOnlyBundle>(out var expandingBundle, reinterpret: true))
-            //     {
-            //         return this.ExpandBundle(node, parentState, expandingBundle);
-            //     }
-            //     
-            //     break;
-        }
+        // switch (node.Handler.Role)
+        // {
+        //     // case HandlerRole.None:
+        //     //     // Step as-is, ignore carry
+        //     //     return this.Step(node, parentState, null);
+        //     
+        //     // // bundle -> bundle
+        //     // case HandlerRole.Bundler:
+        //     //     if (carry.Tag is not PlReadOnlyBundleOf
+        //     //         && this.Engine.Conversions.TryConvert(this, in carry, this.Engine.WellKnown.ReadOnlyBundleOfVariant, out var converted))
+        //     //     {
+        //     //         return this.Step(node, parentState, converted);
+        //     //     }
+        //     //     
+        //     //     break;
+        //     //
+        //     // case HandlerRole.Reducer:
+        //     //     if (carry.Tag is not PlManyOf)
+        //     //     {
+        //     //         // if (carry.TryUnpack<IReadOnlyBundle>(out var bundle, reinterpret: true))
+        //     //         // {
+        //     //         //     return this.ReduceBundle(node, parentState, bundle);
+        //     //         // }
+        //     //
+        //     //         if (this.Engine.Conversions.TryConvert(this, in carry, this.Engine.WellKnown.ReadOnlyBundleOfVariant, out var transformableBundle))
+        //     //         {
+        //     //             return this.ReduceBundle(node, parentState, transformableBundle.Unpack<IReadOnlyBundle<Variant>>());
+        //     //         }
+        //     //         
+        //     //         if (this.Engine.Conversions.TryConvert(this, in carry, this.Engine.WellKnown.ManyOfVariant, out var transformableMany))
+        //     //         {
+        //     //             return this.Step(node, parentState, transformableMany);
+        //     //         }
+        //     //         
+        //     //         return this.Step(node, parentState, null);
+        //     //     }
+        //     //     
+        //     //     break;
+        //     // case HandlerRole.Transformer:
+        //     //     if (carry.Tag is not PlMany)
+        //     //     {
+        //     //         // if (carry.TryUnpack<IReadOnlyBundle>(out var bundle, reinterpret: true))
+        //     //         // {
+        //     //         //     return this.TransformBundle(node, parentState, bundle);
+        //     //         // }
+        //     //
+        //     //         if (this.Engine.Conversions.TryConvert(this, in carry, this.Engine.WellKnown.ReadOnlyBundleOfVariant, out var transformableBundle))
+        //     //         {
+        //     //             return this.TransformBundle(node, parentState, transformableBundle.Unpack<IReadOnlyBundle<Variant>>());
+        //     //         }
+        //     //         
+        //     //         if (this.Engine.Conversions.TryConvert(this, in carry, this.Engine.WellKnown.ManyOfVariant, out var transformableMany))
+        //     //         {
+        //     //             return this.Step(node, parentState, transformableMany);
+        //     //         }
+        //     //         
+        //     //         return this.Step(node, parentState, null);
+        //     //     }
+        //     //     
+        //     //     break;
+        //     //
+        //     // // one -> one
+        //     // case HandlerRole.Mapper:
+        //     //     // if (carry.TryUnpack<IReadOnlyBundle>(out var mapingBundle, reinterpret: true))
+        //     //     // {
+        //     //     //     return this.MapBundle(node, parentState, mapingBundle);
+        //     //     // }
+        //     //
+        //     //     if (carry.TryUnpack<Many<Variant>>(out var manyForMapping))
+        //     //     {
+        //     //         return this.MapMany(node, parentState, manyForMapping);
+        //     //     }
+        //     //
+        //     //     if (this.Engine.Conversions.TryConvert(this, in carry, this.Engine.WellKnown.ManyOfVariant, out var mapConverted))
+        //     //     {
+        //     //         return this.MapMany(node, parentState, mapConverted.Unpack<Many<Variant>>());
+        //     //     }
+        //     //     
+        //     //     break;
+        //     // case HandlerRole.Expander:
+        //     //     
+        //     //     if (carry.TryUnpack<IReadOnlyBundle>(out var expandingBundle, reinterpret: true))
+        //     //     {
+        //     //         return this.ExpandBundle(node, parentState, expandingBundle);
+        //     //     }
+        //     //     
+        //     //     break;
+        // }
         
         if (!node.Handler.HasImplicit)
-            return this.Step(node, parentState, null); // ignore carry
-        
-        var fitCarry = node.CountArguments() + 1 == node.Handler.Signature.ArgumentTypes.Count;
+            return this.Step(node, parentState, false, carry);
 
-        return fitCarry
-            ? this.Step(node, parentState, carry)
-            : this.Step(node, parentState, null);
+        var fitCarry = node.Handler.Signature.IsVariadic
+                       || node.CountArguments() + 1 == node.Handler.Signature.ArgumentTypes.Count;
+
+        return this.Step(node, parentState, fitCarry, carry);
     }
 
-    private async ValueTask<Variant> Step(WeaveNode node, StepState? parentState, Variant? @implicit)
+    private async ValueTask<Variant> Step(WeaveNode node, StepState? parentState, bool useCarry, Variant? carry)
     {
         var handler = node.Handler;
         
@@ -244,12 +240,17 @@ internal sealed class WeaveContext : IWeaveContext, IDisposable
         try
         {
             state.Bind(this, node, parentState);
+
+            if (carry.HasValue)
+            {
+                state.Carry = carry.Value;
+            }
             
             var argPos = 0;
             
-            if (@implicit.HasValue)
+            if (useCarry)
             {
-                argBuffer[argPos] = this.Engine.Conversions.Convert(this, @implicit.Value, handler.Signature.ArgumentTypes[argPos]);
+                argBuffer[argPos] = this.Engine.Conversions.Convert(this, state.Carry, handler.Signature.ArgumentTypes[argPos]);
                 argPos++;
             }
             
@@ -269,9 +270,9 @@ internal sealed class WeaveContext : IWeaveContext, IDisposable
                         throw new PipeLoomException($"Too much arguments trying to call '{handler}'");
 
                     Variant childOutput;
-                        
+                    
                     var argType = handler.Signature.IsVariadic
-                        ? handler.Signature.ArgumentTypes[@implicit.HasValue ? 1 : 0]
+                        ? handler.Signature.ArgumentTypes[handler.HasImplicit ? 1 : 0]
                         : handler.Signature.ArgumentTypes[argPos];
                     
                     if (argType is IPlCustomInputArgProvider argProvider

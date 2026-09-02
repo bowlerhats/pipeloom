@@ -11,6 +11,78 @@ public readonly record struct ImplicitVariadicRegistrator<TImplicit, TVariadic>(
 {
     private IPipeLoomEngine Engine => this.Registrator.Engine;
     
+    #region Generic
+    
+    [OverloadResolutionPriority(1)]
+    public ImplicitVariadicRegistrator<TImplicit, TVariadic> Function<TResult>(Func<TImplicit, ReadOnlyMemory<TVariadic>, ValueTask<TResult>> op, Action<VariadicHandler>? config = null, HandlerConfig<VariadicHandler> next = default)
+    {
+        this.Registrator.Variadic(
+            MethodAdapter.Variadic(this.Engine, op),
+            this.Config.Then(h => h.ChangeSignature<TImplicit, TVariadic, TResult>()).Then(config).Then(next)
+        );
+
+        return this;
+    }
+    
+    public ImplicitVariadicRegistrator<TImplicit, TVariadic> Function<TResult>(Func<TImplicit, ReadOnlyMemory<TVariadic>, TResult> op, Action<VariadicHandler>? config = null, HandlerConfig<VariadicHandler> next = default)
+    {
+        this.Registrator.Variadic(
+            MethodAdapter.Variadic(this.Engine, op),
+            this.Config.Then(h => h.ChangeSignature<TImplicit, TVariadic, TResult>()).Then(config).Then(next)
+        );
+
+        return this;
+    }
+    
+    [OverloadResolutionPriority(1)]
+    public ImplicitVariadicRegistrator<TImplicit, TVariadic> Function<TResult>(Func<WeaveStep, TImplicit, ReadOnlyMemory<TVariadic>, ValueTask<TResult>> op, Action<VariadicHandler>? config = null, HandlerConfig<VariadicHandler> next = default)
+    {
+        this.Registrator.Variadic(
+            MethodAdapter.Variadic(this.Engine, op),
+            this.Config.Then(h => h.ChangeSignature<TImplicit, TVariadic, TResult>()).Then(config).Then(next)
+        );
+
+        return this;
+    }
+    
+    public ImplicitVariadicRegistrator<TImplicit, TVariadic> Function<TResult>(Func<WeaveStep, TImplicit, ReadOnlyMemory<TVariadic>, TResult> op, Action<VariadicHandler>? config = null, HandlerConfig<VariadicHandler> next = default)
+    {
+        this.Registrator.Variadic(
+            MethodAdapter.Variadic(this.Engine, op),
+            this.Config.Then(h => h.ChangeSignature<TImplicit, TVariadic, TResult>()).Then(config).Then(next)
+        );
+
+        return this;
+    }
+    
+    #endregion
+    
+    #region Mapper
+    
+    [OverloadResolutionPriority(1)]
+    public ImplicitVariadicRegistrator<TImplicit, TVariadic> Mapper<TResult>(Func<TImplicit, ReadOnlyMemory<TVariadic>, ValueTask<TResult>> op, Action<VariadicHandler>? config = null, HandlerConfig<VariadicHandler> next = default)
+    {
+        return this.Function(op, next: next.Prepend(h => h.WithRole(HandlerRole.Mapper)).Then(config));
+    }
+    
+    public ImplicitVariadicRegistrator<TImplicit, TVariadic> Mapper<TResult>(Func<TImplicit, ReadOnlyMemory<TVariadic>, TResult> op, Action<VariadicHandler>? config = null, HandlerConfig<VariadicHandler> next = default)
+    {
+        return this.Function(op, next: next.Prepend(h => h.WithRole(HandlerRole.Mapper)).Then(config));
+    }
+    
+    [OverloadResolutionPriority(1)]
+    public ImplicitVariadicRegistrator<TImplicit, TVariadic> Mapper<TResult>(Func<WeaveStep, TImplicit, ReadOnlyMemory<TVariadic>, ValueTask<TResult>> op, Action<VariadicHandler>? config = null, HandlerConfig<VariadicHandler> next = default)
+    {
+        return this.Function(op, next: next.Prepend(h => h.WithRole(HandlerRole.Mapper)).Then(config));
+    }
+    
+    public ImplicitVariadicRegistrator<TImplicit, TVariadic> Mapper<TResult>(Func<WeaveStep, TImplicit, ReadOnlyMemory<TVariadic>, TResult> op, Action<VariadicHandler>? config = null, HandlerConfig<VariadicHandler> next = default)
+    {
+        return this.Function(op, next: next.Prepend(h => h.WithRole(HandlerRole.Mapper)).Then(config));
+    }
+    
+    #endregion
+    
     #region Transfomer
     
     [OverloadResolutionPriority(1)]
