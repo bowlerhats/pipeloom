@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using PipeLoom.Engine.Abstractions;
+using PipeLoom.Engine.Abstractions.Errors;
 using PipeLoom.Engine.Abstractions.Registration;
 using PipeLoom.Operators.Abstractions;
 
@@ -52,9 +54,23 @@ public class JsOpGet : PlOperatorClass
                     break;
                 case JsonValueKind.Array:
                     if (!vArg.TryGetValue<decimal>(out var index))
+                    {
+                        if (!vArg.TryGetValue<string>(out var sIndex))
+                            throw new PipeLoomException("Expected number or number-as-string as an array index");
+                        
+                        if (!decimal.TryParse(sIndex, CultureInfo.InvariantCulture, out index))
+                            throw new PipeLoomException($"Invalid array indexer, cannot be parsed to a number: '{sIndex}'");
+                    }
+                    
+                    if (decimal.Truncate(index) != index)
+                        throw new PipeLoomException($"Array indexer should be an integer, but got fractional: '{index}'");
+
+                    var idx = (int)index;
+                    var asArray = node.AsArray();
+                    if (idx < 0 || idx >= asArray.Count)
                         return null;
                     
-                    node = node.AsArray()[(int)index];
+                    node = asArray[idx];
                     break;
                 default:
                     return null;
