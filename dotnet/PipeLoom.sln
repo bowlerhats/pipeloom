@@ -19,6 +19,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PipeLoom.JsonQuery", "PipeL
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PipeLoom.JsonQuery.Cli", "PipeLoom.JsonQuery.Cli\PipeLoom.JsonQuery.Cli.csproj", "{791D7982-80D5-427E-BA24-C150A5B068FC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PipeLoom.Tests", "PipeLoom.Tests\PipeLoom.Tests.csproj", "{DE570A02-1AF3-4455-B640-89DCA5D38BF1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -49,5 +51,9 @@ Global
 		{791D7982-80D5-427E-BA24-C150A5B068FC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{791D7982-80D5-427E-BA24-C150A5B068FC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{791D7982-80D5-427E-BA24-C150A5B068FC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DE570A02-1AF3-4455-B640-89DCA5D38BF1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DE570A02-1AF3-4455-B640-89DCA5D38BF1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DE570A02-1AF3-4455-B640-89DCA5D38BF1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DE570A02-1AF3-4455-B640-89DCA5D38BF1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using PipeLoom.Engine.Abstractions;
-using PipeLoom.Engine.Abstractions.Errors;
 using PipeLoom.Engine.Abstractions.Registration;
 using PipeLoom.Operators.Abstractions;
 
@@ -40,21 +38,23 @@ public class JsOpGet : PlOperatorClass
             {
                 case JsonValueKind.Object:
                     if (!vArg.TryGetValue<string>(out var prop))
-                        return null;
-                    
-                    node = node.AsObject()[prop];
-                    break;
-                case JsonValueKind.Array:
-                    if (!vArg.TryGetValue<int>(out var index))
                     {
-                        if (!vArg.TryGetValue<string>(out var strIndex))
+                        if (!vArg.TryGetValue<decimal>(out var pIndex))
                             return null;
 
-                        if (!int.TryParse(strIndex, out index))
-                            return null;
+                        node = node.AsObject()[(int)pIndex];
                     }
+                    else
+                    {
+                        node = node.AsObject()[prop];
+                    }
+
+                    break;
+                case JsonValueKind.Array:
+                    if (!vArg.TryGetValue<decimal>(out var index))
+                        return null;
                     
-                    node = node.AsArray()[index];
+                    node = node.AsArray()[(int)index];
                     break;
                 default:
                     return null;
