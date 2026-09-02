@@ -16,7 +16,7 @@ internal static class Commands
     /// </summary>
     /// <param name="input">-f, File to read data from</param>
     /// <param name="output">-o, File to write to</param>
-    /// <param name="parseOnly">Only parse the query and write the result to stdout</param>
+    /// <param name="parseOnly">-p, Only parse the query and write the result to stdout</param>
     /// <param name="testData"></param>
     /// <param name="testQuery"></param>
     /// <param name="stackTrace">Shows exception stack traces</param>
@@ -34,7 +34,7 @@ internal static class Commands
         try
         {
             var query = testQuery
-                ? "[.0.person.name, .0.person.age, .0] | .2.person.age"
+                ? "{ \"a\": [.0.person]}"
                 : string.Join(' ', queryParts);
 
             if (string.IsNullOrWhiteSpace(query))

@@ -10,7 +10,7 @@ using PipeLoom.Operators.Abstractions.Handlers;
 namespace PipeLoom.Operators.Abstractions;
 
 
-public abstract class PlOperatorClass //: IPlOperatorClass
+public abstract class PlOperatorClass
 {
     public string Name { get; }
     
@@ -60,52 +60,25 @@ public abstract class PlOperatorClass //: IPlOperatorClass
         _handlers.Add(opHandler);
     }
 
-    // internal IEnumerable<OperatorHandler> LookupMatchingHandlers(HandlerSignature signature)
-    // {
-    //     foreach (var handler in _handlers)
-    //     {
-    //         if (signature.Arity != handler.Arity)
-    //             continue;
-    //
-    //         var hSignature = handler.Signature;
-    //         
-    //         if (!hSignature.ReturnType.IsAssignableTo(signature.ReturnType))
-    //             continue;
-    //         
-    //         Debug.Assert(signature.ArgumentTypes.Count == hSignature.ArgumentTypes.Count);
-    //
-    //         var matching = true;
-    //         for (var i = 0; i < hSignature.ArgumentTypes.Count; i++)
-    //         {
-    //             matching &= signature.ArgumentTypes[i].IsAssignableTo(hSignature.ArgumentTypes[i]);
-    //         }
-    //
-    //         if (matching)
-    //             yield return handler;
-    //     }
-    // }
-
     internal OperatorHandler? FindMostSpecific(HandlerSignature searched, bool onlyWithRole = false)
     {
         ArgumentNullException.ThrowIfNull(searched);
 
         OperatorHandler? res = null;
+        var score = -1;
         
-        // Search for a direct one
+        // choosing last fit of highest scores
+        
         foreach (var handler in _handlers)
         {
-            if (!searched.IsSuperSetOf(handler.Signature))
-                continue; // handler is out of bounds of search signature
-            
             if (onlyWithRole && handler.Role == HandlerRole.None)
                 continue;
-
-            res ??= handler;
             
-            if (handler.Signature.IsStrictSubSetOf(res.Signature))
+            var fitScore = handler.FitScore(searched);
+            if (fitScore >= 0 && fitScore >= score)
             {
-                // found a narrower match 
                 res = handler;
+                score = fitScore;
             }
         }
 
@@ -128,7 +101,7 @@ public abstract class PlOperatorClass //: IPlOperatorClass
 
         var argCount = node.CountArguments();
 
-        var returnType = this.Engine.WellKnown.Variant;
+        var returnType = node.RequiredReturnType ?? this.Engine.WellKnown.Variant;
 
         var firstArg = node.Arguments.ElementAtOrDefault(0)?.ReturnType!;
         var secondArg = node.Arguments.ElementAtOrDefault(1)?.ReturnType!;
@@ -140,22 +113,14 @@ public abstract class PlOperatorClass //: IPlOperatorClass
             {
                 case 0:
                     candidate = this.FindMostSpecific(HandlerSignature.Unary(returnType, node.CarryType), true);
-                        //?? this.FindMostSpecific(HandlerSignature.Unary(returnType, node.CarryType));
                     break;
                 case 1:
-                    candidate = this.FindMostSpecific(HandlerSignature.Binary(returnType, node.CarryType, firstArg),
-                        true);
-                                //?? this.FindMostSpecific(HandlerSignature.Binary(returnType, node.CarryType, firstArg));
+                    candidate = this.FindMostSpecific(HandlerSignature.Binary(returnType, node.CarryType, firstArg), true);
                     break;
                 case 2:
-                    candidate = this.FindMostSpecific(
-                        HandlerSignature.Ternary(returnType, node.CarryType, firstArg, secondArg), true);
-                                //?? this.FindMostSpecific(HandlerSignature.Ternary(returnType, node.CarryType, firstArg, secondArg));
+                    candidate = this.FindMostSpecific(HandlerSignature.Ternary(returnType, node.CarryType, firstArg, secondArg), true);
                     break;
             }
-
-            candidate ??= this.FindMostSpecific(HandlerSignature.Variadic(returnType, node.CarryType, firstArg), true);
-            //?? this.FindMostSpecific(HandlerSignature.Variadic(returnType, node.CarryType, firstArg));
         }
 
         if (candidate is not null)
@@ -177,8 +142,13 @@ public abstract class PlOperatorClass //: IPlOperatorClass
                 break;
         }
 
-        candidate ??= this.FindMostSpecific(HandlerSignature.Variadic(returnType, firstArg));
+        if (node.CarryType is not null)
+        {
+            candidate ??= this.FindMostSpecific(HandlerSignature.Variadic(returnType, node.CarryType, firstArg), true);
+        }
         
+        candidate ??= this.FindMostSpecific(HandlerSignature.Variadic(returnType, firstArg));
+
         return candidate;
     }
 }

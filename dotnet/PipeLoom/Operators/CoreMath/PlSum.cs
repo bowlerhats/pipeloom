@@ -14,11 +14,7 @@ public class PlSum : PlOperatorClass
     public override void RegisterHandlers(PlOperatorRegistrator registrator)
     {
         registrator.AsUnary<long>().Reducer(Sum);
-        
-        // todo: bugged registration order, overshadowed by long reducer
-        // registrator.AsUnary<int>().Reducer(Sum);
-        
-        //registrator.AsUnary<IBundle<long>>().Function(BundleSum);
+        registrator.AsUnary<int>().Reducer(Sum);
     }
 
     private static long Sum(Many<long> items)
@@ -26,21 +22,10 @@ public class PlSum : PlOperatorClass
         return items.Length != 0 ? TensorPrimitives.Sum(items.AsSpan()) : 0;
     }
     
-    // private static int Sum(Many<int> items)
-    // {
-    //     return items.Length != 0 ? TensorPrimitives.Sum(items.AsSpan()) : 0;
-    // }
-    
-    // private static long BundleSum(IBundle<long> bundle)
-    // {
-    //     var res = 0L;
-    //     foreach (var partition in bundle.Partitions)
-    //     {
-    //         res += TensorPrimitives.Sum(partition.Leaf.AsSpan());
-    //     }
-    //
-    //     return res;
-    // }
+    private static int Sum(Many<int> items)
+    {
+        return items.Length != 0 ? TensorPrimitives.Sum(items.AsSpan()) : 0;
+    }
 }
 
 public class PlSumExtended : PlSum
