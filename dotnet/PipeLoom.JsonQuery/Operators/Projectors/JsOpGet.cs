@@ -20,7 +20,14 @@ public class JsOpGet : PlOperatorClass
     {
         base.RegisterHandlers(registrator);
 
+        registrator.AsNullary().Function(Get);
         registrator.AsVariadic<JsonNode?, JsonNode?>().Mapper(Get);
+    }
+
+    private static JsonNode? Get(WeaveStep step)
+    {
+        return step.State.Carry.TryUnpack<JsonNode?>(out var carry)
+            ? carry : null;
     }
 
     private static JsonNode? Get(JsonNode? node, ReadOnlyMemory<JsonNode?> args)

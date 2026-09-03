@@ -113,7 +113,7 @@ internal sealed class ImplicitVariadicMethodAdapter<TImplicit, TVariadic, TResul
         return async (state, arguments) =>
         {
             var args = arguments.Span;
-            using var recaster = new VariantRecaster<TVariadic>(state.PoolSet.GetArrayPool<TVariadic>(), this.ParamUnpacker, in args);
+            using var recaster = new VariantRecaster<TVariadic>(state.PoolSet.GetArrayPool<TVariadic>(), this.ParamUnpacker, args[1..]);
 
             var step = new WeaveStep(state);
             

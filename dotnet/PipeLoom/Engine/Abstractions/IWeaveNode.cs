@@ -4,6 +4,7 @@ namespace PipeLoom.Engine.Abstractions;
 
 public interface IWeaveNode
 {
+    string OperatorName { get; }
     bool IsArgument { get; }
     
     WeavePlan Plan { get; }

@@ -65,6 +65,7 @@ public abstract class OperatorHandler
         
         const int argMatchScore = 10;
         const int argConvertibleScore = 5;
+        const int resolvePenalty = 1;
         
         var score = 100;
 
@@ -85,28 +86,40 @@ public abstract class OperatorHandler
                 return FitScoreNever;
             }
         }
-        
+
         for (var i = 0; i < argCount; i++)
         {
             var thisArg = this.Signature.ArgumentTypes[i];
             var thisResolvedArg = thisArg.ResolvesTo;
             var otherArg = expected.ArgumentTypes[i];
             var otherResolvedArg = otherArg.ResolvesTo;
-            
-            if (thisArg.Equals(otherArg)
-                || thisArg.Equals(otherResolvedArg)
-                || thisResolvedArg.Equals(otherArg)
-                || thisResolvedArg.Equals(otherResolvedArg))
+
+            // favor more matches at start of arguments
+            var positionBias = argCount - 1;
+
+            if (thisArg.Equals(otherArg))
             {
-                // favor more matches at start of arguments
-                var bias = argCount - 1;
-                score += argMatchScore + bias;
-            } else if (otherArg.IsConvertibleTo(thisArg)
-                       || otherArg.IsConvertibleTo(thisResolvedArg)
-                       || otherResolvedArg.IsConvertibleTo(thisArg)
-                       || otherResolvedArg.IsConvertibleTo(thisResolvedArg))
+                score += argMatchScore + positionBias;
+            }
+            else if (thisArg.Equals(otherResolvedArg) || thisResolvedArg.Equals(otherArg))
+            {
+                score += argMatchScore + positionBias - resolvePenalty;
+            }
+            else if (thisResolvedArg.Equals(otherResolvedArg))
+            {
+                score += argMatchScore + positionBias - 2 * resolvePenalty;
+            }
+            else if (otherArg.IsConvertibleTo(thisArg))
             {
                 score += argConvertibleScore;
+            }
+            else if (otherArg.IsConvertibleTo(thisResolvedArg) || otherResolvedArg.IsConvertibleTo(thisArg))
+            {
+                score += argConvertibleScore - resolvePenalty;
+            }
+            else if (otherResolvedArg.IsConvertibleTo(thisResolvedArg))
+            {
+                score += argConvertibleScore - 2 * resolvePenalty;
             }
             else
             {

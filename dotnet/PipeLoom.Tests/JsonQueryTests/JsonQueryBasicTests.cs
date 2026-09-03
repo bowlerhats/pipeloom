@@ -21,7 +21,10 @@ public class JsonQueryBasicTests : IDisposable
 
         _data = JsonNode.Parse(
             """
-            [ { "name": "John", "age": 31 }, { "name": "Jack", "age": 41 } ]
+            [
+              { "name": "John", "age": 31, "address": { "city": "New York" } },
+              { "name": "Jack", "age": 41, "address": { "city": "Washington" } }
+            ]
             """
         );
     }
@@ -44,7 +47,8 @@ public class JsonQueryBasicTests : IDisposable
     [TestCase("{ \"a\": .0.name } | .a", "\"John\"")]
     [TestCase("{ \"a\": .0 | .name } | .a", "\"John\"")]
     [TestCase("{ \"a\": .0 } | .a | .name", "\"John\"")]
-    [TestCase("[.0, .1]", """[{"name":"John","age":31},{"name":"Jack","age":41}]""")]
+    [TestCase("[.0, .1]", """[{"name":"John","age":31,"address":{"city":"New York"}},{"name":"Jack","age":41,"address":{"city":"Washington"}}]""")]
+    [TestCase("get()", """[{"name":"John","age":31,"address":{"city":"New York"}},{"name":"Jack","age":41,"address":{"city":"Washington"}}]""")]
     public async Task Can_Basic_Transform(string jsq, string expected)
     {
         await this.Run(jsq, expected);
@@ -82,6 +86,36 @@ public class JsonQueryBasicTests : IDisposable
     [TestCase("filter(regex(.name, \"Ack\", \"i\")) | map(.age)", "[41]")]
     [TestCase("filter(regex(.name, \"ac?k\")) | map(.age)", "[41]")]
     public async Task Can_Regex(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase("[2, 1, 3] | sort()", "[1,2,3]")]
+    [TestCase("[2, 1, 3] | sort(get(), \"desc\")", "[3,2,1]")]
+    [TestCase("sort([2, 1, 3])", "[1,2,3]")]
+    [TestCase("map(.age) | sort()", "[31,41]")]
+    [TestCase("sort(.age) | map(.name)", "[\"John\",\"Jack\"]")]
+    [TestCase("sort(.age, \"desc\") | map(.name)", "[\"Jack\",\"John\"]")]
+    [TestCase("sort(.age) | map(.name) | sort()", "[\"Jack\",\"John\"]")]
+    [TestCase("map(.age) | sort(\"desc\")", "[41,31]")]
+    public async Task Can_Sort(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase("[1,2,3] | reverse()", "[3,2,1]")]
+    [TestCase("reverse([1,2,3])", "[3,2,1]")]
+    [TestCase("map(.age) | reverse()", "[41,31]")]
+    [TestCase("reverse(map(.age))", "[41,31]")]
+    public async Task Can_Reverse(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase("pick(.age)", "[{\"age\":31},{\"age\":41}]")]
+    [TestCase("pick(.age, .name)", "[{\"age\":31,\"name\":\"John\"},{\"age\":41,\"name\":\"Jack\"}]")]
+    [TestCase("{ \"price\": 2.5 } | pick(.price)", "2.5", Description = "Function reference shows example of standalone pick to be equivalent to a get")]
+    public async Task Can_Pick(string jsq, string expected)
     {
         await this.Run(jsq, expected);
     }

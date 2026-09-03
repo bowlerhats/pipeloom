@@ -34,12 +34,16 @@ internal static class OperatorRegs
         
         // Projectors
         builder.AddOperatorClass(engine => new JsOpGet(engine));
+        builder.AddOperatorClass(engine => new JsOpPick(engine));
         
         // Regex
         builder.AddOperatorClass(engine => new JsOpRegex(engine));
         
         // Relational
         builder.AddOperatorClass(engine => new JsOpFilter(engine));
+        builder.AddOperatorClass(engine => new JsOpSort(engine));
+        builder.AddOperatorClass(engine => new JsOpReverse(engine));
+        
     }
     
 }
