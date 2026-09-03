@@ -5,7 +5,7 @@ using PipeLoom.Engine.Abstractions;
 using PipeLoom.Engine.Abstractions.Registration;
 using PipeLoom.Operators.Abstractions;
 
-namespace PipeLoom.JsonQuery.Operators.Math;
+namespace PipeLoom.JsonQuery.Operators.Maths;
 
 public class JsOpSum: PlOperatorClass
 {

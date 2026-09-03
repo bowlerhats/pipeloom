@@ -119,6 +119,110 @@ public class JsonQueryBasicTests : IDisposable
     {
         await this.Run(jsq, expected);
     }
+    
+    [TestCase(".0 | mapObject({key: (.key), value: (.value)})", """{"name":"John","age":31,"address":{"city":"New York"}}""")]
+    [TestCase(""".0 | mapObject({key: (if(.key == "name", "a1", .key)), value: (.value)})""", """{"a1":"John","age":31,"address":{"city":"New York"}}""")]
+    [TestCase(".0 | mapObject({key: \"#\" + .key, value: 1})", """{"#name":1,"#age":1,"#address":1}""")]
+    public async Task Can_MapObject(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase("1+2", "3")]
+    [TestCase("1 + 2 + 1.4", "4.4")]
+    [TestCase(""" "#"+2""", "\"#2\"")]
+    [TestCase(""" 1 + "#" """, "\"1#\"")]
+    [TestCase(""" "A" + "B" """, "\"AB\"")]
+    [TestCase(""" "A" + "B" + "C" """, "\"ABC\"")]
+    [TestCase(""" "A" + "B" + "C" + 123 """, "\"ABC123\"")]
+    [TestCase(""" "A" + "B" + "C" + 1e2 """, "\"ABC100\"")]
+    [TestCase("21 + 1e2", "121")]
+    [TestCase(".0.age + .1.age", "72")]
+    [TestCase("21 + -1e2", "-79")]
+    public async Task Can_Add(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase("3-1", "2")]
+    [TestCase("3-10", "-7")]
+    [TestCase("3 - -10", "13")]
+    [TestCase(".0.age - .1.age", "-10")]
+    public async Task Can_Subtract(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase("3 * 4", "12")]
+    [TestCase("3 * -4", "-12")]
+    [TestCase("-1 * 4", "-4")]
+    [TestCase(".0.age * .1.age", "1271")]
+    [TestCase("5 + .0.age * .1.age", "1276")]
+    public async Task Can_Multiply(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase("4/2", "2")]
+    [TestCase("4/-2", "-2")]
+    [TestCase("5 + 4 / -2", "3")]
+    [TestCase("(.0.age - 1) / 3", "10")]
+    public async Task Can_Divide(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase("2^3", "8")]
+    [TestCase("2^-1", "0.5")]
+    [TestCase("3^0", "1")]
+    [TestCase("2 + 2^3", "10")]
+    [TestCase("2^3 + 2", "10")]
+    [TestCase(".0.age ^ 2", "961")]
+    public async Task Can_Pow(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase("3%3", "0")]
+    [TestCase("3%2", "1")]
+    [TestCase("3%-2", "1")]
+    public async Task Can_Mod(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase("abs(-3)", "3")]
+    [TestCase("abs(3)", "3")]
+    [TestCase("abs(-1 * .0.age)", "31")]
+    public async Task Can_Abs(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase("round(23.7612)", "24")]
+    [TestCase("round(23.1345, 2)", "23.13")]
+    [TestCase("round(23.1365, 2)", "23.14")]
+    public async Task Can_Round(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase("number(3)", "3")] 
+    [TestCase("number(\"3\")", "3")]
+    [TestCase("number(-4e3) | number(get())", "-4000")]
+    [TestCase(".0.age | number(get())", "31")]
+    public async Task Can_ParseNumber(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase("string(3)", "\"3\"")]
+    [TestCase("string(.0.age)", "\"31\"")]
+    [TestCase("string(3.334)", "\"3.334\"")]
+    public async Task Can_FormatNumber(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
 
     private async Task Run(string jsq, string expected)
     {
