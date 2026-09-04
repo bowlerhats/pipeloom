@@ -1,5 +1,4 @@
-﻿using System;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using PipeLoom.Engine;
@@ -67,9 +66,9 @@ internal static class PlanBuilder
 
     private static bool BuildObject(WeaveNode node, JsonArray array)
     {
-        if (array.Count != 2)
+        if (array.Count != 2 || array[1]?.GetValueKind() != JsonValueKind.Object)
             return false;
-        
+
         var opNode = node.AppendOperator("object");
         
         var spec = array[1]?.AsObject();

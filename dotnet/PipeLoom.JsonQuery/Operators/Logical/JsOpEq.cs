@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Runtime.Remoting;
 using System.Text.Json.Nodes;
 using Json.More;
 using PipeLoom.Engine.Abstractions;
@@ -31,4 +33,19 @@ public class JsOpEq : PlOperatorClass
 
         return left.IsEquivalentTo(right);
     }
+
+    public sealed class DeepEqualityComparer : EqualityComparer<JsonNode?>
+    {
+        public static DeepEqualityComparer Instance { get; } = new();
+        
+        public override bool Equals(JsonNode? x, JsonNode? y)
+        {
+            return Eq(x, y);
+        }
+
+        public override int GetHashCode(JsonNode obj)
+        {
+            return obj.GetEquivalenceHashCode();
+        }
+    } 
 }

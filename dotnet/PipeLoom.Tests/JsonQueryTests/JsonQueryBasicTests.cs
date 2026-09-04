@@ -223,7 +223,112 @@ public class JsonQueryBasicTests : IDisposable
     {
         await this.Run(jsq, expected);
     }
-
+    
+    [TestCase(".0 | mapKeys(\"#\" + get())", """{"#name":"John","#age":31,"#address":{"city":"New York"}}""")]
+    public async Task Can_MapKeys(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase(".0.address | mapValues(\"#\" + get())", """{"city":"#New York"}""")]
+    [TestCase(".0.address | mapValues(2)", """{"city":2}""")]
+    public async Task Can_MapValues(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase("groupBy(.address.city)", """{"New York":[{"name":"John","age":31,"address":{"city":"New York"}}],"Washington":[{"name":"Jack","age":41,"address":{"city":"Washington"}}]}""")]
+    public async Task Can_MapGroup(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase("""map({"name": .name}) | keyBy(.name)""", """{"John":{"name":"John"},"Jack":{"name":"Jack"}}""")]
+    public async Task Can_KeyBy(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase(".0 | keys()", """["name","age","address"]""")]
+    public async Task Can_Keys(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase(".0 | values()", """["John",31,{"city":"New York"}]""")]
+    public async Task Can_Values(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase("[[1, 2],[3, 4]] | flatten()", "[1,2,3,4]")]
+    [TestCase("[[1, 2, [3, 4]]] | flatten()", "[1,2,[3,4]]")]
+    public async Task Can_Flatten(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase("map(.name) | join(\", \")", "\"John, Jack\"")]
+    [TestCase("map(.age) | join(\", \")", "\"31, 41\"")]
+    [TestCase("map(.name) | join()", "\"JohnJack\"")]
+    [TestCase("join(map(.name))", "\"JohnJack\"")]
+    [TestCase("join(map(.name), \", \")", "\"John, Jack\"")]
+    public async Task Can_Join(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase(""" "abc" | split() """, """["abc"]""")]
+    [TestCase(""" "a bc" | split() """, """["a","bc"]""")]
+    [TestCase(""" "a bc " | split() """, """["a","bc"]""")]
+    [TestCase(""" "a,bc" | split(",") """, """["a","bc"]""")]
+    [TestCase(""" "abc" | split("") """, """["a","b","c"]""")]
+    [TestCase("\"a\tbc\" | split()", """["a","bc"]""")]
+    public async Task Can_Split(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase(""" substring("2024-11-06 23:14:00", 0, 10) """, "\"2024-11-06\"")]
+    [TestCase(""" substring("John", 1) """, "\"ohn\"")]
+    public async Task Can_Substring(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase(" uniq([1,2,3,2,4,4,5]) ", "[1,2,3,4,5]")]
+    public async Task Can_Uniq(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase(""" [{ "a": 1 }, { "a": 1 }] | uniqBy(.a) """, "[{\"a\":1}]")]
+    [TestCase(" uniqBy(.age) | map(.age) | sort() ", "[31,41]")]
+    public async Task Can_UniqBy(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase(" [1,2,3,4,5] | limit(2) ", "[1,2]")]
+    [TestCase(" [1,2,3,4,5] | limit(0) ", "[]")]
+    [TestCase(" [] | limit(0) ", "[]")]
+    [TestCase(" [] | limit(2) ", "[]")]
+    public async Task Can_Limit(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase(" [] | size() ", "0")]
+    [TestCase(" [1,2] | size() ", "2")]
+    [TestCase(""" size("abc") """, "3")]
+    [TestCase(""" size("") """, "0")]
+    [TestCase(" size(.0.name) ", "4")]
+    [TestCase(" .0.name | size() ", "4")]
+    public async Task Can_Size(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
     private async Task Run(string jsq, string expected)
     {
         using var plan = new WeavePlan(_engine);

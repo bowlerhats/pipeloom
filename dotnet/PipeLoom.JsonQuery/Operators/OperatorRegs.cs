@@ -31,6 +31,12 @@ internal static class OperatorRegs
         // Mappers
         builder.AddOperatorClass(engine => new JsOpMap(engine));
         builder.AddOperatorClass(engine => new JsOpMapObject(engine));
+        builder.AddOperatorClass(engine => new JsOpMapKeys(engine));
+        builder.AddOperatorClass(engine => new JsOpMapValues(engine));
+        builder.AddOperatorClass(engine => new JsOpKeyBy(engine));
+        builder.AddOperatorClass(engine => new JsOpJoin(engine));
+        builder.AddOperatorClass(engine => new JsOpSplit(engine));
+        builder.AddOperatorClass(engine => new JsOpSubstring(engine));
         
         // Math
         builder.AddOperatorClass(engine => new JsOpSum(engine));
@@ -42,10 +48,13 @@ internal static class OperatorRegs
         builder.AddOperatorClass(engine => new JsOpMod(engine));
         builder.AddOperatorClass(engine => new JsOpAbs(engine));
         builder.AddOperatorClass(engine => new JsOpRound(engine));
+        builder.AddOperatorClass(engine => new JsOpSize(engine));
         
         // Projectors
         builder.AddOperatorClass(engine => new JsOpGet(engine));
         builder.AddOperatorClass(engine => new JsOpPick(engine));
+        builder.AddOperatorClass(engine => new JsOpKeys(engine));
+        builder.AddOperatorClass(engine => new JsOpValues(engine));
         
         // Regex
         builder.AddOperatorClass(engine => new JsOpRegex(engine));
@@ -54,6 +63,11 @@ internal static class OperatorRegs
         builder.AddOperatorClass(engine => new JsOpFilter(engine));
         builder.AddOperatorClass(engine => new JsOpSort(engine));
         builder.AddOperatorClass(engine => new JsOpReverse(engine));
+        builder.AddOperatorClass(engine => new JsOpGroupBy(engine));
+        builder.AddOperatorClass(engine => new JsOpFlatten(engine));
+        builder.AddOperatorClass(engine => new JsOpUniq(engine));
+        builder.AddOperatorClass(engine => new JsOpUniqBy(engine));
+        builder.AddOperatorClass(engine => new JsOpLimit(engine));
         
     }
     
