@@ -44,6 +44,6 @@ public class JsOpSubstring : PlOperatorClass
         var pStart = Math.Max((int)start, 0);
         var length = (int)(end - pStart);
         
-        return str.Substring((int)start, length);
+        return str.Substring(pStart, length);
     }
 }

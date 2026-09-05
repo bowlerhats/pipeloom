@@ -25,7 +25,7 @@ public class JsOpMapValues : PlOperatorClass
     public static async ValueTask<JsonNode?> MapValues(WeaveStep step, JsonNode? data, Detached<JsonNode?> projector)
     {
         if (data?.GetValueKind() != JsonValueKind.Object)
-            throw new PipeLoomException("mapKeys expects an object");
+            throw new PipeLoomException("mapValues() expects an object");
 
         var jsObject = data.AsObject();
 

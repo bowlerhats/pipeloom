@@ -25,7 +25,7 @@ public class JsOpString: PlOperatorClass
     public static JsonNode FormatString(JsonNode? node)
     {
         if (node?.GetValueKind() != JsonValueKind.Number)
-            throw new PipeLoomException("String formatter expects a string");
+            throw new PipeLoomException("String formatter expects a number");
 
         return JsonValue.Create(node.GetValue<decimal>().ToString(CultureInfo.InvariantCulture));
     }

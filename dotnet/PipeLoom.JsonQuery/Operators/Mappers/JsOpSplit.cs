@@ -24,7 +24,7 @@ public class JsOpSplit : PlOperatorClass
         registrator.AsBinary<JsonNode?, string>().Mapper(SplitBySeparator);
     }
 
-    public static JsonNode? SplitByWords(JsonNode? data)
+    public static JsonNode SplitByWords(JsonNode? data)
     {
         if (data?.GetValueKind() != JsonValueKind.String)
             throw new PipeLoomException("split() expects a string");
@@ -32,28 +32,13 @@ public class JsOpSplit : PlOperatorClass
         var str = data.GetValue<string>();
         if (string.IsNullOrWhiteSpace(str))
             return new JsonArray();
-
-        Span<char> whitespaces = stackalloc char[8];
-        var wsCount = 0;
-        foreach (var c in str)
-        {
-            if (char.IsWhiteSpace(c))
-            {
-                if (!whitespaces[..wsCount].Contains(c))
-                    whitespaces[wsCount++] = c;
-            }
-            
-            if (wsCount >= 7)
-                break;
-        }
-
-        var res = new JsonArray();
         
+        var res = new JsonArray();
         var strSpan = str.AsSpan();
-        foreach (var range in strSpan.SplitAny(whitespaces[..wsCount]))
+
+        foreach (var range in strSpan.SplitAny(ReadOnlySpan<char>.Empty))
         {
             var s = strSpan[range].Trim();
-            
             if (!s.IsEmpty)
                 res.Add((JsonNode)JsonValue.Create(s.ToString()));
         }
@@ -76,7 +61,7 @@ public class JsOpSplit : PlOperatorClass
         var res = new JsonArray();
         
         var strSpan = str.AsSpan();
-        foreach (var range in strSpan.SplitAny(separator))
+        foreach (var range in strSpan.Split(separator))
         {
             var s = strSpan[range];
             

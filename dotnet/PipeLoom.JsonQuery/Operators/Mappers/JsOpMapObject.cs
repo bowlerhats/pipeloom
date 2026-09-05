@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Globalization;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using PipeLoom.Engine.Abstractions;
@@ -52,7 +53,7 @@ public class JsOpMapObject : PlOperatorClass
                 switch (pKey?.GetValueKind())
                 {
                     case JsonValueKind.Number:
-                        res[(int)pKey.GetValue<decimal>()] = pValue?.DeepClone();
+                        res[((int)pKey.GetValue<decimal>()).ToString(CultureInfo.InvariantCulture)] = pValue?.DeepClone();
                         break;
                     case JsonValueKind.String:
                         res[pKey.GetValue<string>()] = pValue?.DeepClone();

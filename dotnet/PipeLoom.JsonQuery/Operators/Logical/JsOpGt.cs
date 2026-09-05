@@ -30,9 +30,7 @@ public class JsOpGt : PlOperatorClass
             (JsonValueKind.String, JsonValueKind.String) => string.Compare(left.GetValue<string>(), right.GetValue<string>(), StringComparison.Ordinal) > 0,
             (JsonValueKind.True, JsonValueKind.True) => false,
             (JsonValueKind.True, JsonValueKind.False) => true,
-            (JsonValueKind.False, JsonValueKind.True) => false,
-            (JsonValueKind.False, JsonValueKind.False) => false,
-            _ => throw new PipeLoomException("gt() expects two numbers|strings|booleans")
+            _ => false
         };
     }
 }

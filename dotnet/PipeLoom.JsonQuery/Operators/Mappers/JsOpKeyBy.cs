@@ -26,7 +26,7 @@ public class JsOpKeyBy : PlOperatorClass
     public static async ValueTask<JsonNode?> KeyBy(WeaveStep step, JsonNode? data, Detached<JsonNode?> keyGetter)
     {
         if (data?.GetValueKind() != JsonValueKind.Array)
-            throw new PipeLoomException("KeyBy expects an array of objects");
+            throw new PipeLoomException("keyBy() expects an array of objects");
         
         var jsArray = data.AsArray();
 
@@ -35,7 +35,7 @@ public class JsOpKeyBy : PlOperatorClass
         foreach (var item in jsArray)
         {
             if (item?.GetValueKind() != JsonValueKind.Object)
-                throw new PipeLoomException("GroupBy expects an array of objects");
+                throw new PipeLoomException("keyBy() expects an array of objects");
 
             var key = await step.State.Step(keyGetter, item);
 

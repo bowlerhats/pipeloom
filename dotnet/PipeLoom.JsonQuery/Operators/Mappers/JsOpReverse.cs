@@ -2,6 +2,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using PipeLoom.Engine.Abstractions;
+using PipeLoom.Engine.Abstractions.Errors;
 using PipeLoom.Engine.Abstractions.Registration;
 using PipeLoom.Operators.Abstractions;
 
@@ -24,7 +25,8 @@ public class JsOpReverse: PlOperatorClass
     public static JsonNode? Reverse(JsonNode? data)
     {
         if (data?.GetValueKind() != JsonValueKind.Array)
-            return data;
+            throw new PipeLoomException("reverse() expects an array");
+        
         var jsArray = data.AsArray();
 
         var res = new JsonArray();
