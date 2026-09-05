@@ -25,7 +25,7 @@ public class JsOpSize : PlOperatorClass
     {
         return data?.GetValueKind() switch
         {
-            JsonValueKind.Array => JsonValue.Create(data.AsArray().Count),
+            JsonValueKind.Array => JsonValue.Create((decimal)data.AsArray().Count),
             JsonValueKind.String => JsonValue.Create(data.GetValue<string?>()?.Length ?? 0),
             _ => throw new PipeLoomException("size() expectes an array or string")
         };

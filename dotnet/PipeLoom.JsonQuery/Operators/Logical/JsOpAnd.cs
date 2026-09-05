@@ -23,17 +23,17 @@ public class JsOpAnd : PlOperatorClass
         registrator.AsVariadic<JsonNode?>().Function(And);
     }
 
-    private static bool And(JsonNode? left)
+    public static bool And(JsonNode? left)
     {
         throw new PipeLoomException("'and' operator needs at least two arguments");
     }
     
-    private static bool And(JsonNode? left, JsonNode? right)
+    public static bool And(JsonNode? left, JsonNode? right)
     {
         return JsonQueryUtils.IsTruthy(left) && JsonQueryUtils.IsTruthy(right);
     }
 
-    private static bool And(ReadOnlyMemory<JsonNode?> args)
+    public static bool And(ReadOnlyMemory<JsonNode?> args)
     {
         var res = args.Length > 1;
         if (!res)
@@ -42,6 +42,9 @@ public class JsOpAnd : PlOperatorClass
         for (var i = 0; i < args.Length; i++)
         {
             res &= JsonQueryUtils.IsTruthy(args.Span[i]);
+            
+            if (!res)
+                break;
         }
 
         return res;

@@ -26,7 +26,17 @@ internal static class OperatorRegs
         
         // Logical
         builder.AddOperatorClass(engine => new JsOpAnd(engine));
+        builder.AddOperatorClass(engine => new JsOpOr(engine));
+        builder.AddOperatorClass(engine => new JsOpNot(engine));
         builder.AddOperatorClass(engine => new JsOpEq(engine));
+        builder.AddOperatorClass(engine => new JsOpNe(engine));
+        builder.AddOperatorClass(engine => new JsOpGt(engine));
+        builder.AddOperatorClass(engine => new JsOpGte(engine));
+        builder.AddOperatorClass(engine => new JsOpLt(engine));
+        builder.AddOperatorClass(engine => new JsOpLte(engine));
+        builder.AddOperatorClass(engine => new JsOpExists(engine));
+        builder.AddOperatorClass(engine => new JsOpIn(engine));
+        builder.AddOperatorClass(engine => new JsOpNotIn(engine));
         
         // Mappers
         builder.AddOperatorClass(engine => new JsOpMap(engine));
@@ -49,6 +59,10 @@ internal static class OperatorRegs
         builder.AddOperatorClass(engine => new JsOpAbs(engine));
         builder.AddOperatorClass(engine => new JsOpRound(engine));
         builder.AddOperatorClass(engine => new JsOpSize(engine));
+        builder.AddOperatorClass(engine => new JsOpMin(engine));
+        builder.AddOperatorClass(engine => new JsOpMax(engine));
+        builder.AddOperatorClass(engine => new JsOpProd(engine));
+        builder.AddOperatorClass(engine => new JsOpAverage(engine));
         
         // Projectors
         builder.AddOperatorClass(engine => new JsOpGet(engine));
@@ -58,6 +72,8 @@ internal static class OperatorRegs
         
         // Regex
         builder.AddOperatorClass(engine => new JsOpRegex(engine));
+        builder.AddOperatorClass(engine => new JsOpMatch(engine));
+        builder.AddOperatorClass(engine => new JsOpMatchAll(engine));
         
         // Relational
         builder.AddOperatorClass(engine => new JsOpFilter(engine));

@@ -17,11 +17,18 @@ public class JsOpObject : PlOperatorClass
     {
         base.RegisterHandlers(registrator);
 
+        registrator.AsNullary().Function(EmptyObject);
+        
         registrator.AsVariadic<JsonNode?, JsonNode?>().Mapper(MergeObject);
         registrator.AsBinary<string, JsonNode?>().Function(MakeObject);
     }
 
-    private static JsonNode MergeObject(JsonNode? node, ReadOnlyMemory<JsonNode?> args)
+    public static JsonNode EmptyObject()
+    {
+        return new JsonObject();
+    }
+    
+    public static JsonNode MergeObject(JsonNode? node, ReadOnlyMemory<JsonNode?> args)
     {
         var res = new JsonObject();
         foreach (var jsonNode in args.Span)
@@ -38,7 +45,7 @@ public class JsOpObject : PlOperatorClass
         return res;
     }
 
-    private static JsonNode MakeObject(string prop, JsonNode? value)
+    public static JsonNode MakeObject(string prop, JsonNode? value)
     {
         return new JsonObject
         {

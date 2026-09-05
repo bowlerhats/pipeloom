@@ -2,6 +2,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using PipeLoom.Engine.Abstractions;
+using PipeLoom.Engine.Abstractions.Errors;
 using PipeLoom.Engine.Abstractions.Registration;
 using PipeLoom.Operators.Abstractions;
 
@@ -21,10 +22,10 @@ public class JsOpSum: PlOperatorClass
         registrator.AsUnary<JsonNode?>().Mapper(Sum);
     }
 
-    private static decimal Sum(JsonNode? node)
+    public static decimal Sum(JsonNode? node)
     {
         if (node?.GetValueKind() != JsonValueKind.Array)
-            return 0;
+            throw new PipeLoomException("sum() expects an array of numbers");
         
         var jsArray = node.AsArray();
         if (jsArray.Count == 0)

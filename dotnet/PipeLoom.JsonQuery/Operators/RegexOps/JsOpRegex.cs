@@ -23,7 +23,7 @@ public class JsOpRegex : PlOperatorClass
         registrator.AsTernary<JsonNode?, string, string>().Function(RunRegex);
     }
 
-    private static bool RunRegex(JsonNode? value, string pattern)
+    public static bool RunRegex(JsonNode? value, string pattern)
     {
         if (value?.GetValueKind() != JsonValueKind.String)
             return false;
@@ -33,7 +33,7 @@ public class JsOpRegex : PlOperatorClass
         return Regex.IsMatch(text, pattern);
     }
 
-    private static bool RunRegex(JsonNode? value, string pattern, string options)
+    public static bool RunRegex(JsonNode? value, string pattern, string options)
     {
         if (value?.GetValueKind() != JsonValueKind.String)
             return false;
@@ -45,7 +45,7 @@ public class JsOpRegex : PlOperatorClass
         return Regex.IsMatch(text, pattern, opts);
     }
     
-    private static RegexOptions ParseJsRegexFlags(string jsFlags)
+    public static RegexOptions ParseJsRegexFlags(string? jsFlags)
     {
         var options = RegexOptions.None;
 

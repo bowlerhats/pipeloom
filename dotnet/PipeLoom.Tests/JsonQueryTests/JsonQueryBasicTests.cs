@@ -90,6 +90,25 @@ public class JsonQueryBasicTests : IDisposable
         await this.Run(jsq, expected);
     }
     
+    [TestCase(""" match("abc", "b") """, """{"value":"b"}""")]
+    [TestCase(""" match("Save the date: 2025-12-25!", "(?<year>[0-9]{4})-(?<month>[0-9]{2})-(?<date>[0-9]{2})") """,
+        """{"value":"2025-12-25","groups":["2025","12","25"],"namedGroups":{"year":"2025","month":"12","date":"25"}}""")]
+    [TestCase(""" match("abc", "(bc)$") """, """{"value":"bc","groups":["bc"]}""")]
+    [TestCase(""" match("abc", "(bc)") """, """{"value":"bc","groups":["bc"]}""")]
+    [TestCase(""" match("abc", "(?<efg>bc)$") """, """{"value":"bc","groups":["bc"],"namedGroups":{"efg":"bc"}}""")]
+    public async Task Can_Match(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase(""" matchAll("abcbd", "b") """, """[{"value":"b"},{"value":"b"}]""")]
+    [TestCase(""" matchAll("abcbdb", "b.") """, """[{"value":"bc"},{"value":"bd"}]""")]
+    [TestCase(""" matchAll("abcbdb", "b.?") """, """[{"value":"bc"},{"value":"bd"},{"value":"b"}]""")]
+    public async Task Can_MatchAll(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
     [TestCase("[2, 1, 3] | sort()", "[1,2,3]")]
     [TestCase("[2, 1, 3] | sort(get(), \"desc\")", "[3,2,1]")]
     [TestCase("sort([2, 1, 3])", "[1,2,3]")]
@@ -325,6 +344,152 @@ public class JsonQueryBasicTests : IDisposable
     [TestCase(" size(.0.name) ", "4")]
     [TestCase(" .0.name | size() ", "4")]
     public async Task Can_Size(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase(" [1,2] | min() ", "1")]
+    [TestCase(" [-3,1,2] | min() ", "-3")]
+    [TestCase(" [] | min() ", "null")]
+    public async Task Can_Min(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase(" [1,2] | max() ", "2")]
+    [TestCase(" [-3,1,2] | max() ", "2")]
+    [TestCase(" [] | max() ", "null")]
+    public async Task Can_Max(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase(" [-3,1,2] | prod() ", "-6")]
+    public async Task Can_Prod(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase(" [-3,1,2] | average() ", "0")]
+    [TestCase(" [1,2,3] | average() ", "2")]
+    public async Task Can_Average(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase(" 1 == 1 ", "true")]
+    [TestCase(" 1 == {} ", "false")]
+    [TestCase(" \"abc\" == \"abc\" ", "true")]
+    public async Task Can_Eq(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase(" 1 != 1 ", "false")]
+    [TestCase(" 1 != 2 ", "true")]
+    [TestCase(" 1 != {} ", "true")]
+    [TestCase(" \"abc\" != \"abc\" ", "false")]
+    [TestCase(" \"abc\" != \"abcd\" ", "true")]
+    public async Task Can_Ne(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase(" 1 > 1 ", "false")]
+    [TestCase(" 1 > 2 ", "false")]
+    [TestCase(" 2 > 1 ", "true")]
+    [TestCase(" \"acc\" > \"abc\" ", "true")]
+    [TestCase(" true > false ", "true")]
+    public async Task Can_Gt(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase(" 1 >= 1 ", "true")]
+    [TestCase(" 1 >= 2 ", "false")]
+    [TestCase(" 2 >= 1 ", "true")]
+    [TestCase(" \"acc\" >= \"abc\" ", "true")]
+    [TestCase(" \"abc\" >= \"abc\" ", "true")]
+    [TestCase(" true >= false ", "true")]
+    [TestCase(" false >= true ", "false")]
+    [TestCase(" false >= false ", "true")]
+    public async Task Can_Gte(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase(" 1 < 1 ", "false")]
+    [TestCase(" 1 < 2 ", "true")]
+    [TestCase(" 2 < 1 ", "false")]
+    [TestCase(" \"acc\" < \"abc\" ", "false")]
+    [TestCase(" true < false ", "false")]
+    [TestCase(" false < true ", "true")]
+    public async Task Can_Lt(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase(" 1 <= 1 ", "true")]
+    [TestCase(" 1 <= 2 ", "true")]
+    [TestCase(" 2 <= 1 ", "false")]
+    [TestCase(" \"acc\" <= \"abc\" ", "false")]
+    [TestCase(" \"abc\" <= \"abc\" ", "true")]
+    [TestCase(" true <= false ", "false")]
+    [TestCase(" false <= true ", "true")]
+    [TestCase(" false <= false ", "true")]
+    public async Task Can_Lte(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase(" 1 and 1 ", "true")]
+    [TestCase(" 1 and false ", "false")]
+    [TestCase(""" .0.name == "John" and .0.age == 31 """, "true")]
+    [TestCase(""" .0.name == "John" and .0.age == 31 and .1.age == 41 """, "true")]
+    [TestCase(""" .0.name == "John" and .0.age == 131 and .1.age == 41 """, "false")]
+    public async Task Can_And(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase(" 1 or 1 ", "true")]
+    [TestCase(" 1 or false ", "true")]
+    [TestCase(" [] or false ", "false")]
+    [TestCase(""" .0.name == "Johnny" or .0.age == 31 """, "true")]
+    [TestCase(""" .0.name == "Johnny" or .0.age == 131 or .1.age == 41 """, "true")]
+    public async Task Can_Or(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase(" not(1) ", "false")]
+    [TestCase(" not(0) ", "true")]
+    [TestCase(" not([]) ", "true")]
+    [TestCase(" not(.0.age == 31) ", "false")]
+    public async Task Can_Not(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase(" .0 | exists(.age) ", "true")]
+    [TestCase(" .0 | exists(.nage) ", "false")]
+    [TestCase(" .0 | exists(.address.city) ", "true")]
+    [TestCase(" .0 | exists(.address.street) ", "false")]
+    public async Task Can_Exists(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase(" .0.age in [31,41] ", "true")]
+    [TestCase(" .0.age in [1,41] ", "false")]
+    public async Task Can_In(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase(" .0.age not in [31,41] ", "false")]
+    [TestCase(" .0.age not in [1,41] ", "true")]
+    public async Task Can_NotIn(string jsq, string expected)
     {
         await this.Run(jsq, expected);
     }
