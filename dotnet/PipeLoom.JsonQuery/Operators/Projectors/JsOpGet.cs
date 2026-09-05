@@ -24,17 +24,17 @@ public class JsOpGet : PlOperatorClass
         registrator.AsVariadic<JsonNode?, JsonNode?>().Mapper(Get);
     }
 
-    private static JsonNode? Get(WeaveStep step)
+    public static JsonNode? Get(WeaveStep step)
     {
         return step.State.Carry.TryUnpack<JsonNode?>(out var carry)
             ? carry : null;
     }
 
-    private static JsonNode? Get(JsonNode? node, ReadOnlyMemory<JsonNode?> args)
+    public static JsonNode? Get(JsonNode? data, ReadOnlyMemory<JsonNode?> args)
     {
         foreach (var arg in args.Span)
         {
-            if (node is null || arg is null)
+            if (data is null || arg is null)
                 return null;
 
             var argKind = arg.GetValueKind();
@@ -43,7 +43,7 @@ public class JsOpGet : PlOperatorClass
             
             var vArg = arg.AsValue();
             
-            switch (node.GetValueKind())
+            switch (data.GetValueKind())
             {
                 case JsonValueKind.Object:
                     if (!vArg.TryGetValue<string>(out var prop))
@@ -51,11 +51,11 @@ public class JsOpGet : PlOperatorClass
                         if (!vArg.TryGetValue<decimal>(out var pIndex))
                             return null;
 
-                        node = node.AsObject()[(int)pIndex];
+                        data = data.AsObject()[(int)pIndex];
                     }
                     else
                     {
-                        node = node.AsObject()[prop];
+                        data = data.AsObject()[prop];
                     }
 
                     break;
@@ -73,17 +73,17 @@ public class JsOpGet : PlOperatorClass
                         throw new PipeLoomException($"Array indexer should be an integer, but got fractional: '{index}'");
 
                     var idx = (int)index;
-                    var asArray = node.AsArray();
+                    var asArray = data.AsArray();
                     if (idx < 0 || idx >= asArray.Count)
                         return null;
                     
-                    node = asArray[idx];
+                    data = asArray[idx];
                     break;
                 default:
                     return null;
             }
         }
 
-        return node;
+        return data;
     }
 }

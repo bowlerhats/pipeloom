@@ -28,7 +28,7 @@ public class JsOpObject : PlOperatorClass
         return new JsonObject();
     }
     
-    public static JsonNode MergeObject(JsonNode? node, ReadOnlyMemory<JsonNode?> args)
+    public static JsonNode MergeObject(JsonNode? data, ReadOnlyMemory<JsonNode?> args)
     {
         var res = new JsonObject();
         foreach (var jsonNode in args.Span)

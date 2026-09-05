@@ -23,12 +23,12 @@ public class JsOpMap : PlOperatorClass
         registrator.AsBinary<JsonNode?, Detached<JsonNode?>>().Mapper(Map);
     }
 
-    private static async ValueTask<JsonNode?> Map(WeaveStep step, JsonNode? node, Detached<JsonNode?> mapper)
+    public static async ValueTask<JsonNode?> Map(WeaveStep step, JsonNode? data, Detached<JsonNode?> mapper)
     {
-        if (node?.GetValueKind() != JsonValueKind.Array)
+        if (data?.GetValueKind() != JsonValueKind.Array)
             throw new PipeLoomException("Map expects an array");
 
-        var jsArray = node.AsArray();
+        var jsArray = data.AsArray();
         var res = new JsonArray();
 
         foreach (var item in jsArray)

@@ -58,7 +58,7 @@ public class JsonQueryBasicTests : IDisposable
     [TestCase("filter(.age == 41 and .name == \"Jack\") | .0.name", "\"Jack\"")]
     [TestCase("filter(.age == 141)", "[]")]
     [TestCase("filter(.age == 141) | .0.name", "null")]
-    public async Task Can_Basic_Filter(string jsq, string expected)
+    public async Task Can_Filter(string jsq, string expected)
     {
         await this.Run(jsq, expected);
     }
@@ -230,7 +230,7 @@ public class JsonQueryBasicTests : IDisposable
     [TestCase("number(\"3\")", "3")]
     [TestCase("number(-4e3) | number(get())", "-4000")]
     [TestCase(".0.age | number(get())", "31")]
-    public async Task Can_ParseNumber(string jsq, string expected)
+    public async Task Can_Number(string jsq, string expected)
     {
         await this.Run(jsq, expected);
     }
@@ -238,7 +238,7 @@ public class JsonQueryBasicTests : IDisposable
     [TestCase("string(3)", "\"3\"")]
     [TestCase("string(.0.age)", "\"31\"")]
     [TestCase("string(3.334)", "\"3.334\"")]
-    public async Task Can_FormatNumber(string jsq, string expected)
+    public async Task Can_String(string jsq, string expected)
     {
         await this.Run(jsq, expected);
     }
@@ -257,7 +257,7 @@ public class JsonQueryBasicTests : IDisposable
     }
     
     [TestCase("groupBy(.address.city)", """{"New York":[{"name":"John","age":31,"address":{"city":"New York"}}],"Washington":[{"name":"Jack","age":41,"address":{"city":"Washington"}}]}""")]
-    public async Task Can_MapGroup(string jsq, string expected)
+    public async Task Can_GroupBy(string jsq, string expected)
     {
         await this.Run(jsq, expected);
     }
@@ -490,6 +490,43 @@ public class JsonQueryBasicTests : IDisposable
     [TestCase(" .0.age not in [31,41] ", "false")]
     [TestCase(" .0.age not in [1,41] ", "true")]
     public async Task Can_NotIn(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase(" if(.0.age == 31, {}, 2) ", "{}")]
+    [TestCase(" if(.0.age != 31, {}, 2) ", "2")]
+    public async Task Can_If(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase(" .0.age ", "31")]
+    [TestCase(" get(\"0\", \"age\") ", "31")]
+    [TestCase(" get() | .1.age ", "41")]
+    public async Task Can_Get(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase(" {} ", "{}")]
+    [TestCase(" object({}) ", "{}")]
+    [TestCase(""" {"a": 11 } """, """{"a":11}""")]
+    [TestCase(""" {"a": .0.age } """, """{"a":31}""")]
+    [TestCase(""" object({"a": 11 }) """, """{"a":11}""")]
+    [TestCase(""" object({"a": .0.age }) """, """{"a":31}""")]
+    public async Task Can_Object(string jsq, string expected)
+    {
+        await this.Run(jsq, expected);
+    }
+    
+    [TestCase(" [] ", "[]")]
+    [TestCase(" [33] ", "[33]")]
+    [TestCase(" [.0.age] ", "[31]")]
+    [TestCase(" array() ", "[]")]
+    [TestCase(" array(33, 12) ", "[33,12]")]
+    [TestCase(" array(.0.age) ", "[31]")]
+    public async Task Can_Array(string jsq, string expected)
     {
         await this.Run(jsq, expected);
     }

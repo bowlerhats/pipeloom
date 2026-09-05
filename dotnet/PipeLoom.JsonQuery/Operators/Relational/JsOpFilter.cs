@@ -22,15 +22,15 @@ public class JsOpFilter : PlOperatorClass
         registrator.AsBinary<JsonNode?, Detached<JsonNode?>>().Mapper(Filter);
     }
 
-    private static async ValueTask<JsonNode?> Filter(WeaveStep step, JsonNode? node, Detached<JsonNode?> condition)
+    public static async ValueTask<JsonNode?> Filter(WeaveStep step, JsonNode? data, Detached<JsonNode?> condition)
     {
-        if (node is null)
+        if (data is null)
             return null;
         
-        if (node.GetValueKind() != JsonValueKind.Array)
+        if (data.GetValueKind() != JsonValueKind.Array)
             throw new PipeLoomException("Filter expects an array input");
 
-        var jsArray = node.AsArray();
+        var jsArray = data.AsArray();
         var res = new JsonArray();
 
         if (jsArray.Count > 0)

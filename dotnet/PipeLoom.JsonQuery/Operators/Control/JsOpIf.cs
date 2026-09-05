@@ -19,7 +19,7 @@ public class JsOpIf : PlOperatorClass
         registrator.AsTernary<JsonNode?, JsonNode?, JsonNode?>().Function(If);
     }
 
-    private static JsonNode? If(JsonNode? condition, JsonNode? then, JsonNode? @else)
+    public static JsonNode? If(JsonNode? condition, JsonNode? then, JsonNode? @else)
     {
         return JsonQueryUtils.IsTruthy(condition) ? then : @else;
     }

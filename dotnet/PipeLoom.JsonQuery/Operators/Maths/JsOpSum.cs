@@ -22,12 +22,12 @@ public class JsOpSum: PlOperatorClass
         registrator.AsUnary<JsonNode?>().Mapper(Sum);
     }
 
-    public static decimal Sum(JsonNode? node)
+    public static decimal Sum(JsonNode? data)
     {
-        if (node?.GetValueKind() != JsonValueKind.Array)
+        if (data?.GetValueKind() != JsonValueKind.Array)
             throw new PipeLoomException("sum() expects an array of numbers");
         
-        var jsArray = node.AsArray();
+        var jsArray = data.AsArray();
         if (jsArray.Count == 0)
             return 0;
 
