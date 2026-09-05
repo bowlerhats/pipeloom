@@ -126,7 +126,7 @@ public class JsOpSort: PlOperatorClass
             return (x?.GetValueKind(), y?.GetValueKind()) switch
             {
                 (JsonValueKind.Number, JsonValueKind.Number)
-                    => (int)(x.GetValue<decimal>() - y.GetValue<decimal>()),
+                    => x.GetValue<decimal>().CompareTo(y.GetValue<decimal>()),
                 (JsonValueKind.String, JsonValueKind.String)
                     => string.CompareOrdinal(x.GetValue<string>(), y.GetValue<string>()),
                 _ => 0
@@ -137,8 +137,8 @@ public class JsOpSort: PlOperatorClass
         {
             return node?.GetValueKind() switch
             {
-                JsonValueKind.True => 1,
-                JsonValueKind.False => 2,
+                JsonValueKind.False => 1,
+                JsonValueKind.True => 2,
                 JsonValueKind.Number => 3,
                 JsonValueKind.String => 4,
                 _ => 5

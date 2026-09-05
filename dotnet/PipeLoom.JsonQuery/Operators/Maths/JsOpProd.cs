@@ -28,7 +28,7 @@ public class JsOpProd : PlOperatorClass
 
         var jsArray = data.AsArray();
         if (jsArray.Count == 0)
-            return null;
+            throw new PipeLoomException("prod() expectes an array of numbers");
 
         var prod = 1M;
         

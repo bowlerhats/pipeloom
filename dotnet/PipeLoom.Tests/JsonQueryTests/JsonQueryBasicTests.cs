@@ -504,6 +504,8 @@ public class JsonQueryBasicTests : IDisposable
     [TestCase(" .0.age ", "31")]
     [TestCase(" get(\"0\", \"age\") ", "31")]
     [TestCase(" get() | .1.age ", "41")]
+    [TestCase(""" {"6":3} | .6 """, "3")]
+    [TestCase(""" {"6":3} | get(6) """, "3")]
     public async Task Can_Get(string jsq, string expected)
     {
         await this.Run(jsq, expected);

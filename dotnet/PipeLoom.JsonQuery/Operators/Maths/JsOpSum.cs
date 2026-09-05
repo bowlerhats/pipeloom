@@ -31,6 +31,16 @@ public class JsOpSum: PlOperatorClass
         if (jsArray.Count == 0)
             return 0;
 
-        return jsArray.Sum(static v => v?.GetValue<decimal>() ?? 0);
+        var res = 0M;
+
+        foreach (var item in jsArray)
+        {
+            if (item?.GetValueKind() != JsonValueKind.Number)
+                throw new PipeLoomException("sum() expects an array of numbers");
+
+            res += item.GetValue<decimal>();
+        }
+
+        return res;
     }
 }

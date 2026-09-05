@@ -26,7 +26,7 @@ public class JsOpRound : PlOperatorClass
     public static JsonNode Round(JsonNode? value)
     {
         if (value?.GetValueKind() != JsonValueKind.Number)
-            throw new PipeLoomException("Abs expects a number");
+            throw new PipeLoomException("round() expects a number");
         
         return JsonValue.Create(Math.Round(value.GetValue<decimal>()));
     }
@@ -34,7 +34,7 @@ public class JsOpRound : PlOperatorClass
     public static JsonNode Round(JsonNode? value, decimal digits)
     {
         if (value?.GetValueKind() != JsonValueKind.Number)
-            throw new PipeLoomException("Abs expects a number");
+            throw new PipeLoomException("round() expects a number");
         
         return JsonValue.Create(Math.Round(value.GetValue<decimal>(), (int)digits));
     }

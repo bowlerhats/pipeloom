@@ -51,7 +51,7 @@ public class JsOpGet : PlOperatorClass
                         if (!vArg.TryGetValue<decimal>(out var pIndex))
                             return null;
 
-                        data = data.AsObject()[(int)pIndex];
+                        data = data.AsObject()[((int)pIndex).ToString(CultureInfo.InvariantCulture)];
                     }
                     else
                     {

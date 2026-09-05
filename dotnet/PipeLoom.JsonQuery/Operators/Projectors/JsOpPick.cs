@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -88,6 +89,31 @@ public class JsOpPick: PlOperatorClass
         if (lastConstArgument is null)
             return false;
 
-        return lastConstArgument.ImplicitValue.TryUnpack(out propertyName);
+        if (lastConstArgument.ImplicitValue.TryUnpack(out string str))
+        {
+            propertyName = str;
+            return true;
+        }
+        
+        if (lastConstArgument.ImplicitValue.TryUnpack(out decimal num))
+        {
+            propertyName = num.ToString(CultureInfo.InvariantCulture);
+            return true;
+        }
+        
+        if (lastConstArgument.ImplicitValue.TryUnpack(out JsonNode? lastNode))
+        {
+            switch (lastNode?.GetValueKind())
+            {
+                case JsonValueKind.Number:
+                    propertyName = lastNode.GetValue<decimal>().ToString(CultureInfo.InvariantCulture);
+                    return true;
+                case JsonValueKind.String:
+                    propertyName = lastNode.GetValue<string>();
+                    return true;
+            }
+        }
+
+        return false;
     }
 }

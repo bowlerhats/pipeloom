@@ -39,8 +39,8 @@ public class JsOpUniqBy : PlOperatorClass
 
             if (key is null)
                 throw new PipeLoomException("uniqBy() key should not be null");
-
-            items[key] = item;
+            
+            items.TryAdd(key, item);
         }
         
         var res = new JsonArray();
