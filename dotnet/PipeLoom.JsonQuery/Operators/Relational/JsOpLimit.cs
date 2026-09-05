@@ -36,7 +36,7 @@ public class JsOpLimit : PlOperatorClass
         var res = new JsonArray();
         foreach (var item in jsArray)
         {
-            if (++count > limit)
+            if (++count > iLimit)
                 break;
             
             res.Add(item?.DeepClone());

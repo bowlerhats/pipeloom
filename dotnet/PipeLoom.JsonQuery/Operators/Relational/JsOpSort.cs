@@ -28,12 +28,12 @@ public class JsOpSort: PlOperatorClass
         registrator.AsTernary<JsonNode?, Detached<JsonNode?>, string>().Mapper(Sort);
     }
 
-    public static JsonNode? Sort(WeaveStep step, JsonNode? data)
+    public static JsonNode? Sort(JsonNode? data)
     {
-        return Sort(step, data, "asc");
+        return Sort(data, "asc");
     }
     
-    public static JsonNode? Sort(WeaveStep step, JsonNode? data, string direction)
+    public static JsonNode? Sort(JsonNode? data, string direction)
     {
         if (data?.GetValueKind() != JsonValueKind.Array)
             return data;
@@ -61,7 +61,7 @@ public class JsOpSort: PlOperatorClass
             // so it is impossible for the engine to fit it properly otherwise
             
             var constValue = await step.State.Step(projector);
-            return Sort(step, constValue, direction);
+            return Sort(constValue, direction);
         }
         
         if (data?.GetValueKind() != JsonValueKind.Array)

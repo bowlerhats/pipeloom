@@ -24,7 +24,7 @@ public class JsOpFlatten : PlOperatorClass
     public static JsonNode Flatten(JsonNode? data)
     {
         if (data?.GetValueKind() != JsonValueKind.Array)
-            throw new PipeLoomException("flatten() expectes an array");
+            throw new PipeLoomException("flatten() expects an array");
 
         var jsArray = data.AsArray();
 

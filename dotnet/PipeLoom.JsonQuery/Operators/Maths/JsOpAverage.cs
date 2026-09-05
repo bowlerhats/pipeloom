@@ -24,11 +24,11 @@ public class JsOpAverage : PlOperatorClass
     public static JsonNode? Average(JsonNode? data)
     {
         if (data?.GetValueKind() != JsonValueKind.Array)
-            throw new PipeLoomException("average() expectes an array of numbers");
+            throw new PipeLoomException("average() expects an array of numbers");
 
         var jsArray = data.AsArray();
         if (jsArray.Count == 0)
-            throw new PipeLoomException("average() expectes an array of numbers");
+            throw new PipeLoomException("average() expects an array of numbers");
 
         var avgSum = JsOpSum.Sum(data);
         var avgCount = JsOpSize.Size(data).GetValue<decimal>();

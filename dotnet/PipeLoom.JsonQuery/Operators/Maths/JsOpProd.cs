@@ -24,18 +24,18 @@ public class JsOpProd : PlOperatorClass
     public static JsonNode? Prod(JsonNode? data)
     {
         if (data?.GetValueKind() != JsonValueKind.Array)
-            throw new PipeLoomException("prod() expectes an array of numbers");
+            throw new PipeLoomException("prod() expects an array of numbers");
 
         var jsArray = data.AsArray();
         if (jsArray.Count == 0)
-            throw new PipeLoomException("prod() expectes an array of numbers");
+            throw new PipeLoomException("prod() expects an array of numbers");
 
         var prod = 1M;
         
         foreach (var item in jsArray)
         {
             if (item?.GetValueKind() != JsonValueKind.Number)
-                throw new PipeLoomException("prod() expectes an array of numbers");
+                throw new PipeLoomException("prod() expects an array of numbers");
 
             prod *= item.GetValue<decimal>();
             if (prod == 0)

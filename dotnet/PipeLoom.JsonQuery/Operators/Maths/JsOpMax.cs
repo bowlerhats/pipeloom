@@ -24,7 +24,7 @@ public class JsOpMax : PlOperatorClass
     public static JsonNode? Max(JsonNode? data)
     {
         if (data?.GetValueKind() != JsonValueKind.Array)
-            throw new PipeLoomException("max() expectes an array of numbers");
+            throw new PipeLoomException("max() expects an array of numbers");
 
         var jsArray = data.AsArray();
         if (jsArray.Count == 0)
@@ -35,7 +35,7 @@ public class JsOpMax : PlOperatorClass
         foreach (var item in jsArray)
         {
             if (item?.GetValueKind() != JsonValueKind.Number)
-                throw new PipeLoomException("max() expectes an array of numbers");
+                throw new PipeLoomException("max() expects an array of numbers");
 
             var value = item.GetValue<decimal>();
             if (value > max)
